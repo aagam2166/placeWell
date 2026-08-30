@@ -4,6 +4,7 @@ import { router as authRouter, authMiddleware } from './src/routes/Auth.js';
 import userRouter from './src/routes/User.js';
 import experienceRoutes from './src/routes/Experience.js';
 import companyRouter from './src/routes/Company.js';
+import topicRouter from './src/routes/Topic.js';
 import errorHandler from './src/Middleware/errorHandler.js';
 
 const app = express();
@@ -14,14 +15,29 @@ BigInt.prototype.toJSON = function () {
 };
 
 // Middlewares
+if (process.env.NODE_ENV === 'development' || process.env.FRONTEND_URL) {
+  app.use((req, res, next) => {
+    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+}
+
 app.use(authMiddleware);
 app.use(express.json());
 
 // Routes
 app.use('/', authRouter);
-app.use('/', userRouter);
+app.use('/api', userRouter);
 app.use('/api/v1/experiences', experienceRoutes);
-app.use('/companies', companyRouter);
+app.use('/api/companies', companyRouter);
+app.use('/api/v1', topicRouter);
 
 // Error Handling
 app.use(errorHandler);
