@@ -1,1 +1,3 @@
-// This file is obsolete. Replaced by Company.js (ES Modules version)
+import companyRouter from './Company.js';
+
+export default companyRouter;

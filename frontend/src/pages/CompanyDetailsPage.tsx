@@ -28,8 +28,6 @@ export const CompanyDetailsPage: React.FC<{
   const coreStackSkills = companySkills.filter((cs) => cs.usage_type === 'core_stack');
   const frequentTopics = companySkills.filter((cs) => cs.usage_type === 'frequent_interview_topic');
 
-  const totalExperiences = db.interview_experiences.filter((e) => e.company_id === company.company_id).length;
-
   const filteredRoles = roles.filter((r) =>
     r.role_title.toLowerCase().includes(roleSearch.toLowerCase())
   );
@@ -94,7 +92,6 @@ export const CompanyDetailsPage: React.FC<{
             </div>
           </div>
         </div>
-
       </div>
 
       {/* 2. SKILLS THE COMPANY HIRES / INTERVIEWS FOR (COMPANY_SKILL) */}
