@@ -1,10 +1,30 @@
-# PlaceWell 🎓
+<div align="center">
 
-> **Data-Driven Placement Intelligence & Peer Interview Experience Platform**
+<img src="https://github.com/user-attachments/assets/bf5d6c45-9b52-47e8-9e32-93a9e5635634" alt="PlaceWell Logo" width="220"/>
+
+# PlaceWell
+
+### Data-Driven Placement Intelligence & Peer Interview Experience Platform
+
+</div>
+
 > 
 > *Empowering students with structured company intelligence, aggregated role analytics, topic frequency insights, and verified peer interview experiences.*
 
 ---
+
+## The MedMax Crew
+
+- Vatsalkumar Satishkumar Shah
+- Shah Aagam Alpesh
+- Sonigara Jainam Ritesh
+- Aman Nagpal
+- Nayan Jain
+- Pari Tibrewal
+
+## Check it Out
+- Live Deployed Platform: https://frontend-five-ruddy-22.vercel.app/
+- Demo Video: https://youtu.be/jK6VSKn2trc
 
 ## 1. Project Title & Overview
 
@@ -34,7 +54,6 @@ PlaceWell aggregates raw interview experiences into actionable, interactive visu
 1. **Aggregated Role Analytics:** Real-time calculation of selection outcome ratios, difficulty distributions, and round sequence breakdowns directly from database entries.
 2. **Interactive Topic-Based Question Filtering:** Instantly filter real company interview questions by specific topics (e.g., Arrays, Operating Systems, Trees).
 3. **Anonymity Control:** Flexible public anonymity options allowing contributors to share honest reviews without exposing personal identity.
-4. **Unified Brand & Modern Aesthetics:** Sleek dark/light UI built with custom SVG visualization charts (Selection Outcome Donut, Difficulty Histogram, Topic Frequency Bars).
 
 ### Main User Journey Flow
 
