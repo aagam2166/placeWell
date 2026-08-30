@@ -1,4 +1,4 @@
-const prisma = require("../config/prisma");
+import prisma from '../config/prisma.js';
 
 const authenticateUser = async (req, res, next) => {
   try {
@@ -10,7 +10,7 @@ const authenticateUser = async (req, res, next) => {
 
     // Fetch user from database using Prisma
     const user = await prisma.users.findUnique({
-      where: { auth0_id: auth0Id }
+      where: { auth_provider_id: auth0Id }
     });
 
     if (!user) {
@@ -25,4 +25,4 @@ const authenticateUser = async (req, res, next) => {
   }
 };
 
-module.exports = authenticateUser;
+export default authenticateUser;
