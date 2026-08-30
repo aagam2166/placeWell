@@ -9,7 +9,7 @@ datasource db {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model companies {
   company_id            BigInt                  @id @default(autoincrement())
-  name                  String
+  name                  String                  @unique
   industry              String?
   website               String?
   logo_url              String?
@@ -40,7 +40,6 @@ model interview_experiences {
   result              String?
   overall_difficulty  Int?
   ctc_or_stipend      String?
-  total_rounds        Int?
   summary_text        String?
   is_anonymous_public Boolean?    @default(false)
   status              String?     @default("draft")
@@ -51,17 +50,17 @@ model interview_experiences {
   rounds              rounds[]
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model questions {
-  question_id    BigInt  @id @default(autoincrement())
-  round_id       BigInt?
-  topic_id       BigInt?
-  question_text  String
-  question_type  String?
-  difficulty     Int?
-  reference_link String?
-  rounds         rounds? @relation(fields: [round_id], references: [round_id], onDelete: Cascade, onUpdate: NoAction)
-  topics         topics? @relation(fields: [topic_id], references: [topic_id], onUpdate: NoAction)
+  question_id     BigInt            @id @default(autoincrement())
+  round_id        BigInt
+  question_text   String?
+  question_type   String?
+  difficulty      Int?
+  reference_link  String?
+  rounds          rounds            @relation(fields: [round_id], references: [round_id], onDelete: Cascade, onUpdate: NoAction)
+  question_topics question_topics[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -69,28 +68,29 @@ model resources {
   resource_id           BigInt                 @id @default(autoincrement())
   experience_id         BigInt?
   title                 String
-  url                   String
+  content               String
   created_at            DateTime?              @default(now()) @db.Timestamptz(6)
   interview_experiences interview_experiences? @relation(fields: [experience_id], references: [experience_id], onUpdate: NoAction)
   skill_resources       skill_resources[]
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model rounds {
-  round_id              BigInt                 @id @default(autoincrement())
-  experience_id         BigInt?
-  topic_id              BigInt?
-  round_number          Int?
+  round_id              BigInt                @id @default(autoincrement())
+  experience_id         BigInt
+  round_number          Int
   round_type            String?
   duration_minutes      Int?
   description_text      String?
-  difficulty_rating     Int?
   platform_used         String?
   difficulty            Int?
   notes                 String?
   questions             questions[]
-  interview_experiences interview_experiences? @relation(fields: [experience_id], references: [experience_id], onDelete: Cascade, onUpdate: NoAction)
-  topics                topics?                @relation(fields: [topic_id], references: [topic_id], onUpdate: NoAction)
+  interview_experiences interview_experiences @relation(fields: [experience_id], references: [experience_id], onDelete: Cascade, onUpdate: NoAction)
+  round_topics          round_topics[]
+
+  @@unique([experience_id, round_number])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -106,7 +106,7 @@ model skill_resources {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model skills {
   skill_id        BigInt            @id @default(autoincrement())
-  skill_name      String
+  skill_name      String            @unique
   company_skills  company_skills[]
   skill_resources skill_resources[]
   topics          topics[]
@@ -115,16 +115,18 @@ model skills {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model topics {
-  topic_id        BigInt      @id @default(autoincrement())
+  topic_id        BigInt            @id @default(autoincrement())
   skill_id        BigInt?
   topic_name      String
   parent_topic_id BigInt?
   category        String?
-  questions       questions[]
-  rounds          rounds[]
-  topics          topics?     @relation("topicsTotopics", fields: [parent_topic_id], references: [topic_id], onDelete: Cascade, onUpdate: NoAction)
-  other_topics    topics[]    @relation("topicsTotopics")
-  skills          skills?     @relation(fields: [skill_id], references: [skill_id], onUpdate: NoAction)
+  round_topics    round_topics[]
+  question_topics question_topics[]
+  topics          topics?           @relation("topicsTotopics", fields: [parent_topic_id], references: [topic_id], onDelete: Cascade, onUpdate: NoAction)
+  other_topics    topics[]          @relation("topicsTotopics")
+  skills          skills?           @relation(fields: [skill_id], references: [skill_id], onUpdate: NoAction)
+
+  @@unique([skill_id, topic_name])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -144,7 +146,8 @@ model users {
   name                  String
   email                 String                  @unique
   password_hash         String?
-  auth0_id              String?                 @unique
+  auth_provider_id      String                  @unique
+  auth_provider         auth_provider
   college               String?
   branch                String?
   graduation_year       Int?
@@ -152,4 +155,29 @@ model users {
   created_at            DateTime?               @db.Timestamptz(6) @default(now())
   interview_experiences interview_experiences[]
   user_skills           user_skills[]
+}
+
+enum auth_provider {
+  google
+  local
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model round_topics {
+  round_id BigInt
+  topic_id BigInt
+  rounds   rounds @relation(fields: [round_id], references: [round_id], onDelete: Cascade, onUpdate: NoAction)
+  topics   topics @relation(fields: [topic_id], references: [topic_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([round_id, topic_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model question_topics {
+  question_id BigInt
+  topic_id    BigInt
+  questions   questions @relation(fields: [question_id], references: [question_id], onDelete: Cascade, onUpdate: NoAction)
+  topics      topics    @relation(fields: [topic_id], references: [topic_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([question_id, topic_id])
 }
