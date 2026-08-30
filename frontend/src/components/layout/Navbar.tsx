@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { usePlaceWell } from '../../context/PlaceWellContext';
 import { useTheme } from '../../context/ThemeContext';
+import logoImg from '../../assets/logo.png';
 import {
   Compass,
   Building2,
@@ -13,7 +14,6 @@ import {
   X,
   RotateCcw,
   CheckCircle2,
-  GraduationCap,
   Sun,
   Moon
 } from 'lucide-react';
@@ -80,17 +80,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate }) => {
                 onClick={() => onNavigate(currentUser ? 'feed' : 'landing')}
                 className="flex items-center gap-2.5 text-left group focus:outline-none"
               >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-cyan-500 to-teal-400 p-0.5 shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
-                  <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5 text-cyan-400" />
-                  </div>
-                </div>
+                <img src={logoImg} alt="PlaceWell Logo" className="w-9 h-9 object-contain group-hover:scale-105 transition-transform" />
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                       Place<span className="text-brand-600 dark:text-brand-400">Well</span>
                     </span>
-                  
                   </div>
                 </div>
               </button>
@@ -177,7 +172,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate }) => {
                           Student Profile & Skills
                         </button>
 
-                        <button
+                        {/* <button
                           type="button"
                           onClick={() => {
                             setIsUserMenuOpen(false);
@@ -187,9 +182,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate }) => {
                         >
                           <Compass className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                           Personalized Placement Feed
-                        </button>
+                        </button> */}
 
-                        <button
+                        {/* <button
                           type="button"
                           onClick={() => {
                             setIsUserMenuOpen(false);
@@ -200,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate }) => {
                         >
                           <RotateCcw className="w-4 h-4 text-amber-500" />
                           Reset Sample Demo State
-                        </button>
+                        </button> */}
                       </div>
 
                       <div className="border-t border-slate-100 dark:border-slate-800 pt-1">

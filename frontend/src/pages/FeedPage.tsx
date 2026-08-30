@@ -253,8 +253,8 @@ export const FeedPage: React.FC<{ onNavigate: (page: string, params?: any) => vo
                 key={exp.experience_id}
                 experience={exp}
                 company={comp}
-                authorCollege={author?.college}
-                authorBranch={author?.branch}
+                authorCollege={author?.college || undefined}
+                authorBranch={author?.branch || undefined}
                 onClick={() => onNavigate('alumni-details', { experienceId: exp.experience_id })}
               />
             );

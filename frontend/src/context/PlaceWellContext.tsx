@@ -9,6 +9,7 @@ import {
   Topic,
   Question,
   Resource,
+  SkillResource,
   UserSkill,
   CompanySkill,
   ProficiencyLevel,
@@ -17,6 +18,7 @@ import {
   QuestionType,
   ExperienceType,
   ExperienceResult,
+  TopicCategory,
 } from '../types/database';
 import { initialDatabase } from '../data/initialData';
 import * as companyApi from '../services/companyApi';
@@ -148,7 +150,7 @@ interface PlaceWellContextType {
       questions: Omit<Question, 'question_id' | 'round_id'>[];
     }[];
     resources: { title: string; url: string; skill_id?: number }[];
-  }) => void;
+  }) => Promise<void> | void;
   submitExperience: (payload: {
     experience: Omit<InterviewExperience, 'experience_id' | 'user_id' | 'created_at'>;
     rounds: {
@@ -156,7 +158,7 @@ interface PlaceWellContextType {
       questions: Omit<Question, 'question_id' | 'round_id'>[];
     }[];
     resources: { title: string; url: string; skill_id?: number }[];
-  }) => number; // returns experience_id
+  }) => Promise<number> | number; // returns experience_id
   resetDatabase: () => void;
   // Company Backend API actions
   fetchBackendCompanies: () => Promise<void>;
@@ -250,18 +252,6 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   }, [db]);
 
-  useEffect(() => {
-    try {
-      if (currentUserId !== null) {
-        localStorage.setItem(CURRENT_USER_KEY, String(currentUserId));
-      } else {
-        localStorage.removeItem(CURRENT_USER_KEY);
-      }
-    } catch (e) {
-      console.warn('Error saving current user:', e);
-    }
-  }, [currentUserId]);
-
   const fetchBackendCompanies = async () => {
     try {
       const apiCompanies = await companyApi.getCompanies();
@@ -305,13 +295,274 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
+  const fetchBackendExperiences = async () => {
+    try {
+      const response = await fetch('/api/v1/experiences', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setDb((prev) => {
+            const fetchedExps: InterviewExperience[] = data.map((exp: any) => ({
+              experience_id: Number(exp.experience_id),
+              user_id: exp.user_id ? Number(exp.user_id) : 1,
+              company_id: Number(exp.company_id),
+              role_title: exp.role_title,
+              experience_type: exp.experience_type || 'placement',
+              year: exp.year || 2025,
+              result: exp.result || 'selected',
+              overall_difficulty: exp.overall_difficulty || 3,
+              ctc_or_stipend: exp.ctc_or_stipend || '',
+              total_rounds: exp.rounds ? exp.rounds.length : 3,
+              summary_text: exp.summary_text || '',
+              is_anonymous_public: exp.is_anonymous_public || false,
+              status: exp.status || 'verified',
+              created_at: exp.created_at || new Date().toISOString(),
+            }));
+
+            const fetchedRounds: Round[] = [];
+            const fetchedQuestions: Question[] = [];
+
+            data.forEach((exp: any) => {
+              if (Array.isArray(exp.rounds)) {
+                exp.rounds.forEach((r: any) => {
+                  const roundId = Number(r.round_id);
+                  const expId = Number(exp.experience_id);
+                  const topicId = r.topics ? Number(r.topics.topic_id) : (r.topic_id ? Number(r.topic_id) : 1);
+
+                  fetchedRounds.push({
+                    round_id: roundId,
+                    experience_id: expId,
+                    topic_id: topicId,
+                    round_number: Number(r.round_number),
+                    round_type: (r.round_type as RoundType) || 'Tech',
+                    duration_minutes: r.duration_minutes ? Number(r.duration_minutes) : 60,
+                    description_text: r.description_text || '',
+                    difficulty_rating: r.difficulty ? Number(r.difficulty) : 3,
+                    platform_used: r.platform_used || 'Google Meet',
+                    difficulty: r.difficulty ? Number(r.difficulty) : 3,
+                    notes: r.notes || '',
+                  });
+
+                  if (Array.isArray(r.questions)) {
+                    r.questions.forEach((q: any) => {
+                      fetchedQuestions.push({
+                        question_id: Number(q.question_id),
+                        round_id: roundId,
+                        topic_id: q.topics ? Number(q.topics.topic_id) : (q.topic_id ? Number(q.topic_id) : topicId),
+                        question_text: q.question_text || '',
+                        question_type: (q.question_type as QuestionType) || 'coding',
+                        difficulty: q.difficulty ? Number(q.difficulty) : 3,
+                        reference_link: q.reference_link || '',
+                      });
+                    });
+                  }
+                });
+              }
+            });
+
+            const existingIds = new Set(prev.interview_experiences.map((e) => e.experience_id));
+            const newExps = fetchedExps.filter((e) => !existingIds.has(e.experience_id));
+            const updatedExps = prev.interview_experiences.map((e) => {
+              const match = fetchedExps.find((f) => f.experience_id === e.experience_id);
+              return match ? match : e;
+            });
+
+            const existingRoundIds = new Set(prev.rounds.map((r) => r.round_id));
+            const newRounds = fetchedRounds.filter((r) => !existingRoundIds.has(r.round_id));
+            const updatedRounds = prev.rounds.map((r) => {
+              const match = fetchedRounds.find((fr) => fr.round_id === r.round_id);
+              return match ? match : r;
+            });
+
+            const existingQuestionIds = new Set(prev.questions.map((q) => q.question_id));
+            const newQuestions = fetchedQuestions.filter((q) => !existingQuestionIds.has(q.question_id));
+            const updatedQuestions = prev.questions.map((q) => {
+              const match = fetchedQuestions.find((fq) => fq.question_id === q.question_id);
+              return match ? match : q;
+            });
+
+            return {
+              ...prev,
+              interview_experiences: [...updatedExps, ...newExps],
+              rounds: [...updatedRounds, ...newRounds],
+              questions: [...updatedQuestions, ...newQuestions],
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend experiences fetch notice:', err);
+    }
+  };
+
+  const fetchBackendTopics = async () => {
+    try {
+      const response = await fetch('/api/v1/topics', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setDb((prev) => {
+            const fetchedTopics: Topic[] = data.map((t: any) => ({
+              topic_id: Number(t.topic_id),
+              skill_id: t.skill_id ? Number(t.skill_id) : 1,
+              topic_name: t.topic_name,
+              parent_topic_id: t.parent_topic_id ? Number(t.parent_topic_id) : null,
+              category: (t.category as TopicCategory) || 'dsa',
+            }));
+
+            return {
+              ...prev,
+              topics: fetchedTopics,
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend topics fetch notice:', err);
+    }
+  };
+
+  const fetchBackendSkills = async () => {
+    try {
+      const response = await fetch('/api/v1/skills', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setDb((prev) => {
+            const fetchedSkills: Skill[] = data.map((s: any) => ({
+              skill_id: Number(s.skill_id),
+              skill_name: s.skill_name,
+            }));
+
+            return {
+              ...prev,
+              skills: fetchedSkills,
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend skills fetch notice:', err);
+    }
+  };
+
+  const fetchBackendQuestions = async () => {
+    try {
+      const response = await fetch('/api/v1/questions', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setDb((prev) => {
+            const fetchedQuestions: Question[] = data.map((q: any) => ({
+              question_id: Number(q.question_id),
+              round_id: Number(q.round_id),
+              topic_id: q.topic_id ? Number(q.topic_id) : 1,
+              question_text: q.question_text || '',
+              question_type: (q.question_type as QuestionType) || 'coding',
+              difficulty: q.difficulty ? Number(q.difficulty) : 3,
+              reference_link: q.reference_link || '',
+            }));
+
+            const existingIds = new Set(prev.questions.map((q) => q.question_id));
+            const newQuestions = fetchedQuestions.filter((q) => !existingIds.has(q.question_id));
+            const updatedQuestions = prev.questions.map((q) => {
+              const match = fetchedQuestions.find((fq) => fq.question_id === q.question_id);
+              return match ? match : q;
+            });
+
+            return {
+              ...prev,
+              questions: [...updatedQuestions, ...newQuestions],
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend questions fetch notice:', err);
+    }
+  };
+
+  const fetchBackendResources = async () => {
+    try {
+      const response = await fetch('/api/v1/resources', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setDb((prev) => {
+            const fetchedResources: Resource[] = [];
+            const fetchedSkillResources: SkillResource[] = [];
+
+            data.forEach((r: any) => {
+              const resId = Number(r.resource_id);
+              fetchedResources.push({
+                resource_id: resId,
+                experience_id: r.experience_id ? Number(r.experience_id) : 1,
+                title: r.title || '',
+                url: r.url || r.content || '',
+                created_at: r.created_at || new Date().toISOString(),
+              });
+
+              if (Array.isArray(r.skill_resources)) {
+                r.skill_resources.forEach((sr: any) => {
+                  fetchedSkillResources.push({
+                    skill_id: Number(sr.skill_id),
+                    resource_id: resId,
+                  });
+                });
+              }
+            });
+
+            return {
+              ...prev,
+              resources: fetchedResources,
+              skill_resources: fetchedSkillResources.length > 0 ? fetchedSkillResources : prev.skill_resources,
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend resources fetch notice:', err);
+    }
+  };
+
+  const fetchBackendUserSkills = async () => {
+    try {
+      const response = await fetch('/api/v1/user-skills', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setDb((prev) => {
+            const fetchedUserSkills: UserSkill[] = data.map((us: any) => ({
+              user_id: Number(us.user_id),
+              skill_id: Number(us.skill_id),
+              proficiency_level: (us.proficiency_level as ProficiencyLevel) || 'intermediate',
+            }));
+
+            return {
+              ...prev,
+              user_skills: fetchedUserSkills,
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend user skills fetch notice:', err);
+    }
+  };
+
   useEffect(() => {
     fetchBackendCompanies();
+    fetchBackendExperiences();
+    fetchBackendTopics();
+    fetchBackendSkills();
+    fetchBackendQuestions();
+    fetchBackendResources();
+    fetchBackendUserSkills();
   }, []);
 
   const createCompanyApi = async (data: { name: string; industry?: string; website?: string; logo_url?: string }): Promise<Company> => {
     try {
-      const created = await companyApi.createCompany(data, currentUserId || 1);
+      const created = await companyApi.createCompany(data, currentUser?.user_id || 1);
       const newCompany: Company = {
         company_id: created.company_id,
         name: created.name,
@@ -344,7 +595,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     skillData: { skill_id?: number; skill_name?: string; usage_type?: 'core_stack' | 'frequent_interview_topic' }
   ) => {
     try {
-      const res = await companyApi.addSkillToCompany(companyId, skillData, currentUserId || 1);
+      const res = await companyApi.addSkillToCompany(companyId, skillData, currentUser?.user_id || 1);
       const skillId = res?.skill_id || skillData.skill_id || 1;
       setDb((prev) => {
         const exists = prev.company_skills.some((cs) => cs.company_id === companyId && cs.skill_id === skillId);
@@ -364,8 +615,6 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
       console.error('Failed to add skill via API:', err);
     }
   };
-
-  const currentUser = db.users.find((u) => u.user_id === currentUserId) || null;
 
   const setCurrentUser = (user: User | null) => {
     setCurrentUserState(user);
@@ -617,7 +866,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
       graduation_year: user?.graduation_year || 2025,
       name: !experience.is_anonymous_public || isOwner ? user?.name : undefined,
       email: !experience.is_anonymous_public || isOwner ? user?.email : undefined,
-      phone: !experience.is_anonymous_public || isOwner ? user?.phone : undefined,
+      phone: (!experience.is_anonymous_public || isOwner) ? (user?.phone || undefined) : undefined,
       is_owner: isOwner,
     };
 
@@ -938,7 +1187,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
-  const updateExperience = (experienceId: number, payload: {
+  const updateExperience = async (experienceId: number, payload: {
     experience: Omit<InterviewExperience, 'experience_id' | 'user_id' | 'created_at'>;
     rounds: {
       round: Omit<Round, 'round_id' | 'experience_id'>;
@@ -946,6 +1195,55 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     }[];
     resources: { title: string; url: string; skill_id?: number }[];
   }) => {
+    const userId = currentUser ? currentUser.user_id : 1;
+    try {
+      const apiBody = {
+        company_id: payload.experience.company_id,
+        role_title: payload.experience.role_title,
+        experience_type: payload.experience.experience_type,
+        year: payload.experience.year,
+        result: payload.experience.result,
+        overall_difficulty: payload.experience.overall_difficulty,
+        ctc_or_stipend: payload.experience.ctc_or_stipend,
+        summary_text: payload.experience.summary_text,
+        is_anonymous_public: payload.experience.is_anonymous_public,
+        status: payload.experience.status,
+        rounds: payload.rounds.map((r) => ({
+          round_number: r.round.round_number,
+          round_type: r.round.round_type,
+          duration_minutes: r.round.duration_minutes,
+          description_text: r.round.description_text,
+          platform_used: r.round.platform_used,
+          difficulty: r.round.difficulty || r.round.difficulty_rating,
+          notes: r.round.notes,
+          topic_id: r.round.topic_id,
+          questions: r.questions.map((q) => ({
+            question_text: q.question_text,
+            question_type: q.question_type,
+            topic_id: q.topic_id,
+            difficulty: q.difficulty,
+            reference_link: q.reference_link,
+          })),
+        })),
+        resources: payload.resources.map((res) => ({
+          title: res.title,
+          url: res.url,
+        })),
+      };
+
+      await fetch(`/api/v1/experiences/${experienceId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': String(userId),
+        },
+        credentials: 'include',
+        body: JSON.stringify(apiBody),
+      });
+    } catch (err) {
+      console.warn('Error updating experience in backend DB:', err);
+    }
+
     setDb((prev) => {
       const existingExperience = prev.interview_experiences.find((e) => e.experience_id === experienceId);
       if (!existingExperience) return prev;
@@ -1032,16 +1330,71 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     });
   };
 
-  const submitExperience = (payload: {
+  const submitExperience = async (payload: {
     experience: Omit<InterviewExperience, 'experience_id' | 'user_id' | 'created_at'>;
     rounds: {
       round: Omit<Round, 'round_id' | 'experience_id'>;
       questions: Omit<Question, 'question_id' | 'round_id'>[];
     }[];
     resources: { title: string; url: string; skill_id?: number }[];
-  }): number => {
+  }): Promise<number> => {
     const userId = currentUser ? currentUser.user_id : 1;
-    const newExpId = Math.max(...db.interview_experiences.map((e) => e.experience_id), 0) + 1;
+    let newExpId = Math.max(...db.interview_experiences.map((e) => e.experience_id), 0) + 1;
+
+    try {
+      const apiBody = {
+        company_id: payload.experience.company_id,
+        role_title: payload.experience.role_title,
+        experience_type: payload.experience.experience_type,
+        year: payload.experience.year,
+        result: payload.experience.result,
+        overall_difficulty: payload.experience.overall_difficulty,
+        ctc_or_stipend: payload.experience.ctc_or_stipend,
+        summary_text: payload.experience.summary_text,
+        is_anonymous_public: payload.experience.is_anonymous_public,
+        status: payload.experience.status,
+        rounds: payload.rounds.map((r) => ({
+          round_number: r.round.round_number,
+          round_type: r.round.round_type,
+          duration_minutes: r.round.duration_minutes,
+          description_text: r.round.description_text,
+          platform_used: r.round.platform_used,
+          difficulty: r.round.difficulty || r.round.difficulty_rating,
+          notes: r.round.notes,
+          topic_id: r.round.topic_id,
+          questions: r.questions.map((q) => ({
+            question_text: q.question_text,
+            question_type: q.question_type,
+            topic_id: q.topic_id,
+            difficulty: q.difficulty,
+            reference_link: q.reference_link,
+          })),
+        })),
+        resources: payload.resources.map((res) => ({
+          title: res.title,
+          url: res.url,
+        })),
+      };
+
+      const res = await fetch('/api/v1/experiences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': String(userId),
+        },
+        credentials: 'include',
+        body: JSON.stringify(apiBody),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.experience_id) {
+          newExpId = Number(data.experience_id);
+        }
+      }
+    } catch (err) {
+      console.warn('Error saving experience to backend DB, falling back to local state:', err);
+    }
 
     const newExperience: InterviewExperience = {
       ...payload.experience,
@@ -1097,7 +1450,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     setDb((prev) => ({
       ...prev,
-      interview_experiences: [newExperience, ...prev.interview_experiences],
+      interview_experiences: [newExperience, ...prev.interview_experiences.filter((e) => e.experience_id !== newExpId)],
       rounds: [...prev.rounds, ...newRounds],
       questions: [...prev.questions, ...newQuestions],
       resources: [...prev.resources, ...newResources],

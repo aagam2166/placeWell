@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = '/api';
 
 export interface ApiCompany {
   company_id: number;
@@ -84,7 +84,7 @@ function getHeaders(userId?: number) {
  * 1. GET /companies - Get list of companies with optional filters
  */
 export async function getCompanies(params?: { search?: string; industry?: string; skill_id?: number }): Promise<ApiCompany[]> {
-  const url = new URL(`${API_BASE_URL}/companies`);
+  const url = new URL('/api/companies', window.location.origin);
   if (params?.search) url.searchParams.append('search', params.search);
   if (params?.industry && params.industry !== 'All') url.searchParams.append('industry', params.industry);
   if (params?.skill_id) url.searchParams.append('skill_id', String(params.skill_id));

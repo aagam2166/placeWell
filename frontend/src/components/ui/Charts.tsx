@@ -13,7 +13,8 @@ export const OutcomeDonutChart: React.FC<{
   }
 
   const selPct = Math.round((selected / total) * 100);
-  const rejPct = Math.round((rejected / total) * 100);
+  const calculatedRejCount = total - selected;
+  const rejPct = 100 - selPct;
 
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
@@ -21,22 +22,23 @@ export const OutcomeDonutChart: React.FC<{
   const selOffset = 0;
   const selLength = (selPct / 100) * circumference;
 
-  const rejOffset = -selLength;
-  const rejLength = (rejPct / 100) * circumference;
-
   return (
     <div className="flex flex-col sm:flex-row items-center gap-6">
       <div className="relative w-36 h-36 flex items-center justify-center">
         <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
+          {/* Base Circle: Rose Red for Rejected */}
           <circle
             cx="50"
             cy="50"
             r={radius}
-            className="stroke-slate-100 dark:stroke-slate-800"
-            strokeWidth="14"
+            className="stroke-rose-500 transition-all duration-500 cursor-pointer hover:stroke-rose-400"
+            strokeWidth={activeSegment === 'rejected' ? 17 : 14}
             fill="transparent"
+            onMouseEnter={() => setActiveSegment('rejected')}
+            onMouseLeave={() => setActiveSegment(null)}
           />
 
+          {/* Overlay Circle: Emerald Green for Selected */}
           {selPct > 0 && (
             <circle
               cx="50"
@@ -46,25 +48,8 @@ export const OutcomeDonutChart: React.FC<{
               strokeWidth={activeSegment === 'selected' ? 17 : 14}
               strokeDasharray={`${selLength} ${circumference}`}
               strokeDashoffset={selOffset}
-              strokeLinecap="round"
               fill="transparent"
               onMouseEnter={() => setActiveSegment('selected')}
-              onMouseLeave={() => setActiveSegment(null)}
-            />
-          )}
-
-          {rejPct > 0 && (
-            <circle
-              cx="50"
-              cy="50"
-              r={radius}
-              className="stroke-rose-500 transition-all duration-500 cursor-pointer hover:stroke-rose-400"
-              strokeWidth={activeSegment === 'rejected' ? 17 : 14}
-              strokeDasharray={`${rejLength} ${circumference}`}
-              strokeDashoffset={rejOffset}
-              strokeLinecap="round"
-              fill="transparent"
-              onMouseEnter={() => setActiveSegment('rejected')}
               onMouseLeave={() => setActiveSegment(null)}
             />
           )}
@@ -72,10 +57,10 @@ export const OutcomeDonutChart: React.FC<{
 
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
           <span className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
-            {activeSegment === 'selected' ? `${selPct}%` : activeSegment === 'rejected' ? `${rejPct}%` : total}
+            {activeSegment === 'selected' ? `${selPct}%` : activeSegment === 'rejected' ? `${rejPct}%` : `${selPct}%`}
           </span>
           <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            {activeSegment ? activeSegment : 'Responses'}
+            {activeSegment === 'selected' ? 'Selected' : activeSegment === 'rejected' ? 'Rejected' : 'Selected'}
           </span>
         </div>
       </div>
@@ -110,7 +95,7 @@ export const OutcomeDonutChart: React.FC<{
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Rejected</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-900 dark:text-white">{rejected}</span>
+            <span className="text-xs font-bold text-slate-900 dark:text-white">{calculatedRejCount}</span>
             <span className="text-xs text-slate-500 dark:text-slate-400">({rejPct}%)</span>
           </div>
         </div>
@@ -189,7 +174,7 @@ export const RoundFrequencyChart: React.FC<{
   return (
     <div className="space-y-3">
       {/* Visual multi-segmented bar */}
-      <div className="h-4 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex shadow-inner">
+      {/* <div className="h-4 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex shadow-inner">
         {roundEntries.map((entry) => (
           <div
             key={entry.type}
@@ -198,7 +183,7 @@ export const RoundFrequencyChart: React.FC<{
             title={`${entry.label}: ${entry.count} occurrences (${entry.pct}%)`}
           />
         ))}
-      </div>
+      </div> */}
 
       {/* Breakdown list */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
@@ -218,42 +203,57 @@ export const RoundFrequencyChart: React.FC<{
 
 export const TopicFrequencyBar: React.FC<{
   topTopics: { topic: Topic; skill: Skill; count: number; percentage: number }[];
+  selectedTopic?: string | null;
   onSelectTopic?: (topic: Topic) => void;
-}> = ({ topTopics, onSelectTopic }) => {
+  onClearFilter?: () => void;
+}> = ({ topTopics, selectedTopic, onSelectTopic, onClearFilter }) => {
   if (topTopics.length === 0) {
     return <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-sm">No specific topic frequency recorded yet</div>;
   }
 
   return (
     <div className="space-y-3">
-      {topTopics.slice(0, 6).map((item) => (
-        <div
-          key={item.topic.topic_id}
-          onClick={() => onSelectTopic?.(item.topic)}
-          className="group p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-cyan-300 dark:hover:border-cyan-500 hover:bg-cyan-50/30 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
-        >
-          <div className="flex items-center justify-between text-xs mb-1.5">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-cyan-400 transition-colors">
-                {item.topic.topic_name}
-              </span>
-              <span className="text-[10px] uppercase font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
-                {item.skill.skill_name}
+      {topTopics.slice(0, 8).map((item) => {
+        const isSelected = selectedTopic === item.topic.topic_name;
+        return (
+          <div
+            key={item.topic.topic_id}
+            onClick={() => onSelectTopic?.(item.topic)}
+            className={`group p-2.5 rounded-xl border transition-all cursor-pointer ${
+              isSelected
+                ? 'border-brand-500 bg-brand-50/70 dark:bg-brand-950/60 ring-1 ring-brand-500'
+                : 'border-slate-100 dark:border-slate-800 hover:border-cyan-300 dark:hover:border-cyan-500 hover:bg-cyan-50/30 dark:hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="flex items-center justify-between text-xs mb-1.5">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`font-bold transition-colors ${
+                    isSelected
+                      ? 'text-brand-700 dark:text-brand-300'
+                      : 'text-slate-800 dark:text-slate-200 group-hover:text-brand-600 dark:group-hover:text-cyan-400'
+                  }`}
+                >
+                  {item.topic.topic_name}
+                </span>
+                <span className="text-[10px] uppercase font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/70 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+                  {item.skill.skill_name}
+                </span>
+              </div>
+              <span className="font-semibold text-slate-600 dark:text-slate-400">
+                {item.count} mentions
               </span>
             </div>
-            <span className="font-semibold text-slate-600 dark:text-slate-400">
-              {item.count} mentions
-            </span>
-          </div>
 
-          <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-teal-400 via-cyan-500 to-brand-600 transition-all duration-700"
-              style={{ width: `${item.percentage}%` }}
-            />
+            <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-teal-400 via-cyan-500 to-brand-600 transition-all duration-700"
+                style={{ width: `${item.percentage}%` }}
+              />
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

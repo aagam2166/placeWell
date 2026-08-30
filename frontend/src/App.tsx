@@ -150,7 +150,7 @@ const AppContent: React.FC = () => {
       {currentTab !== 'auth' && (
         <div className="fixed bottom-5 left-5 z-50">
           <div ref={demoSwitcherRef} className="relative">
-            <button
+            {/* <button
               type="button"
               onClick={() => setIsDemoSwitcherOpen((prev) => !prev)}
               className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-slate-900/90 dark:bg-slate-800/95 backdrop-blur-md text-white hover:bg-slate-950 dark:hover:bg-slate-700 shadow-2xl border border-slate-700/80 text-xs font-bold transition-all hover:scale-105"
@@ -158,7 +158,7 @@ const AppContent: React.FC = () => {
               <Layers className="w-4 h-4 text-cyan-400" />
               <span>10-Page Demo Navigator</span>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            </button>
+            </button> */}
 
             <div
               className={`absolute bottom-12 left-0 w-80 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl transition-all duration-200 ease-out dark:border-slate-800 dark:bg-slate-900 z-50 ${

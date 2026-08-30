@@ -84,7 +84,7 @@ export const initialDatabase: DatabaseState = {
   companies: [
     {
       company_id: 1,
-      name: 'Qualcomm',
+      name: 'Qual',
       industry: 'Semiconductor & Wireless Tech',
       website: 'https://www.qualcomm.com',
       logo_url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=128&auto=format&fit=crop&q=80',

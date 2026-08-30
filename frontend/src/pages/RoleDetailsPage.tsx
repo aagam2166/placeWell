@@ -12,7 +12,9 @@ import {
   HelpCircle,
   TrendingUp,
   ShieldCheck,
-  ChevronLeft
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { getRoleAnalytics } from '../services/companyApi';
 
@@ -24,7 +26,9 @@ export const RoleDetailsPage: React.FC<{
   const { getRoleAggregatedInsights } = usePlaceWell();
 
   const [selectedTopicFilter, setSelectedTopicFilter] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [apiInsights, setApiInsights] = useState<any>(null);
+  const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
     let isMounted = true;
@@ -41,6 +45,11 @@ export const RoleDetailsPage: React.FC<{
       isMounted = false;
     };
   }, [companyId, roleTitle]);
+
+  const handleSelectTopic = (topicName: string | null) => {
+    setSelectedTopicFilter(topicName);
+    setCurrentPage(1);
+  };
 
   const insights = apiInsights || getRoleAggregatedInsights(companyId, roleTitle);
 
@@ -75,8 +84,14 @@ export const RoleDetailsPage: React.FC<{
 
   // Filtered FAQ
   const filteredQuestions = selectedTopicFilter
-    ? frequently_asked_questions.filter((q: any) => q.topic?.topic_name === selectedTopicFilter)
+    ? frequently_asked_questions.filter((q: any) => (q.topic?.topic_name || q.topic_name) === selectedTopicFilter)
     : frequently_asked_questions;
+
+  const totalQuestions = filteredQuestions.length;
+  const totalPages = Math.ceil(totalQuestions / ITEMS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalQuestions);
+  const currentQuestions = filteredQuestions.slice(startIndex, endIndex);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -156,158 +171,213 @@ export const RoleDetailsPage: React.FC<{
         </div>
       </div>
 
-      {/* 2. THREE-PANEL GRAPHICAL ANALYTICS SECTION */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Panel 1: Outcome Distribution */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 flex flex-col justify-between space-y-4">
+      {/* 2. INTERVIEW OVERVIEW: VISUAL CHARTS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Selection Outcome Donut */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 space-y-4">
           <div>
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <Award className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                Outcome Ratio
-              </h3>
-              <span className="text-[11px] font-bold text-slate-400">Selected vs Rejected</span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Percentage of candidate submissions that received an offer for {roleTitle}.
+            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+              <Award className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+              <span>Selection Outcome Distribution</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Aggregated across all reported candidates.
             </p>
           </div>
 
-          <div className="py-2">
-            <OutcomeDonutChart
-              selected={outcomes.selected}
-              rejected={outcomes.rejected}
-              total={total_experiences}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-center pt-2 border-t border-slate-100 dark:border-slate-800/80">
-            <div className="bg-emerald-50/50 dark:bg-emerald-950/30 p-2 rounded-xl border border-emerald-100 dark:border-emerald-900/40">
-              <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase">Selected</p>
-              <p className="text-lg font-extrabold text-emerald-800 dark:text-emerald-200">{outcomes.selected_pct}%</p>
-            </div>
-            <div className="bg-rose-50/50 dark:bg-rose-950/30 p-2 rounded-xl border border-rose-100 dark:border-rose-900/40">
-              <p className="text-[10px] font-bold text-rose-700 dark:text-rose-300 uppercase">Rejected</p>
-              <p className="text-lg font-extrabold text-rose-800 dark:text-rose-200">{outcomes.rejected_pct}%</p>
-            </div>
-          </div>
+          <OutcomeDonutChart
+            selected={outcomes.selected}
+            rejected={outcomes.rejected}
+            total={total_experiences}
+          />
         </div>
 
-        {/* Panel 2: Perceived Interview Difficulty */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 flex flex-col justify-between space-y-4">
+        {/* Difficulty Distribution Histogram */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 space-y-4">
           <div>
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                Difficulty Rating
-              </h3>
-              <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800">
-                <span className="text-xs font-extrabold text-amber-700 dark:text-amber-300">{avg_difficulty}/5</span>
-                <DifficultyStars rating={avg_difficulty} />
-              </div>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Histogram breakdown of candidate ratings from 1 (Very Easy) to 5 (Hard).
+            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <span>Reported Difficulty Ratings</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Breakdown of student ratings (1★ Easy to 5★ Very Hard).
             </p>
           </div>
 
-          <div className="py-2">
-            <DifficultyHistogram distribution={difficulty_distribution} total={total_experiences} />
-          </div>
-
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
-            <span className="font-bold text-slate-800 dark:text-white">Rating Insight: </span>
-            {avg_difficulty >= 4
-              ? 'High bar! Expect hard algorithmic & system design rounds.'
-              : 'Moderate difficulty level focused on core engineering fundamentals.'}
-          </div>
+          <DifficultyHistogram
+            distribution={difficulty_distribution}
+            total={total_experiences}
+          />
         </div>
 
-        {/* Panel 3: Round Structure Frequency */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 flex flex-col justify-between space-y-4">
+        {/* Round Structure Frequency */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 space-y-4">
           <div>
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                Round Structure Breakdown
-              </h3>
-              <span className="text-[11px] font-bold text-slate-400">Interview Pipeline</span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Distribution of rounds reported across candidates for {roleTitle}.
+            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+              <Layers className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              <span>Round Structure Breakdown</span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Relative occurrence of OA, Tech, System Design, HR.
             </p>
           </div>
 
-          <div className="py-2">
-            <RoundFrequencyChart roundStructure={round_structure} />
-          </div>
-
-          <div className="p-3 bg-purple-50/50 dark:bg-purple-950/40 rounded-xl border border-purple-100 dark:border-purple-900/40 text-xs text-purple-900 dark:text-purple-200">
-            <span className="font-bold">Most Common Round: </span>
-            {keyInsights?.most_common_round || 'Technical Round'}
-          </div>
+          <RoundFrequencyChart roundStructure={round_structure} />
         </div>
       </div>
 
-      {/* 3. TOP INTERVIEW TOPICS / FREQUENCY BARS */}
+      {/* 3. INTERVIEW QUESTIONS & FREQUENTLY TESTED TOPICS (MERGED SECTION) */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 sm:p-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
-            <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-              <span>Top Tested Topics ({top_topics.length})</span>
+            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+              <span>Frequently Asked Questions & Tested Topics</span>
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Click any topic bar below to filter the Question Bank specifically for that topic.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Problem statements and topics aggregated for {roleTitle}. Select topics on the right to filter questions.
             </p>
           </div>
 
           {selectedTopicFilter && (
-            <button
-              onClick={() => setSelectedTopicFilter(null)}
-              className="self-start sm:self-auto text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/60 px-3 py-1.5 rounded-xl border border-brand-200 dark:border-brand-800"
-            >
-              Clear Filter ({selectedTopicFilter})
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Filter:</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950/70 px-3 py-1 rounded-xl border border-brand-200 dark:border-brand-800">
+                <span>{selectedTopicFilter}</span>
+                <button
+                  onClick={() => handleSelectTopic(null)}
+                  className="p-0.5 hover:bg-brand-200/60 dark:hover:bg-brand-800/60 rounded-full transition-colors"
+                  title="Clear filter"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            </div>
           )}
         </div>
 
-        <TopicFrequencyBar
-          topTopics={top_topics}
-          onSelectTopic={(t: any) => setSelectedTopicFilter(t.topic?.topic_name || t.topic_name)}
-        />
-      </div>
+        {/* 2/3 (Left) and 1/3 (Right) Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          {/* Left: Questions (2/3 space) */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  Questions ({totalQuestions})
+                </h3>
+                {totalQuestions > 0 && (
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md font-medium">
+                    Showing {startIndex + 1}–{endIndex} of {totalQuestions}
+                  </span>
+                )}
+              </div>
 
-      {/* 4. QUESTION BANK (FAQS FOR ROLE) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 sm:p-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <HelpCircle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              <span>Frequently Asked Questions ({filteredQuestions.length})</span>
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Actual problem statements and theoretical questions reported for {roleTitle}.
-            </p>
+              {totalPages > 1 && (
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  Page {currentPage} of {totalPages}
+                </span>
+              )}
+            </div>
+
+            {currentQuestions.length === 0 ? (
+              <div className="text-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700 space-y-2.5">
+                <HelpCircle className="w-7 h-7 text-slate-400 mx-auto" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  No questions logged for "{selectedTopicFilter}"
+                </p>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Try selecting another topic from the right or clear the filter to see all questions.
+                </p>
+                <button
+                  onClick={() => handleSelectTopic(null)}
+                  className="mt-1 text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1"
+                >
+                  Clear topic filter
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3.5">
+                {currentQuestions.map(({ question, topic, round_type }: any) => (
+                  <QuestionCard
+                    key={question.question_id}
+                    question={question}
+                    topic={topic}
+                    roundType={round_type}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    currentPage === 1
+                      ? 'text-slate-400 dark:text-slate-600 bg-slate-100/60 dark:bg-slate-800/40 cursor-not-allowed border border-transparent'
+                      : 'text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60 shadow-2xs'
+                  }`}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
+
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                        currentPage === pageNum
+                          ? 'bg-brand-600 text-white shadow-sm'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    currentPage === totalPages
+                      ? 'text-slate-400 dark:text-slate-600 bg-slate-100/60 dark:bg-slate-800/40 cursor-not-allowed border border-transparent'
+                      : 'text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60 shadow-2xs'
+                  }`}
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Tested Topics Filter (1/3 space) */}
+          <div className="lg:col-span-1 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                <span>Interview Topics</span>
+              </h3>
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                Click topic to filter
+              </span>
+            </div>
+
+            <TopicFrequencyBar
+              topTopics={top_topics}
+              selectedTopic={selectedTopicFilter}
+              onSelectTopic={(t: any) => handleSelectTopic(t.topic?.topic_name || t.topic_name)}
+              onClearFilter={() => handleSelectTopic(null)}
+            />
           </div>
         </div>
-
-        {filteredQuestions.length === 0 ? (
-          <div className="text-center py-8 text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 rounded-2xl">
-            No questions logged for this topic filter yet.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredQuestions.map(({ question, topic, round_type }: any) => (
-              <QuestionCard
-                key={question.question_id}
-                question={question}
-                topic={topic}
-                roundType={round_type}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
       {/* 5. PEOPLE WHO SHARED EXPERIENCES (STRICT ANONYMITY RULE) */}

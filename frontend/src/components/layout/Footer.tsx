@@ -1,5 +1,6 @@
 import React from 'react';
-import { ShieldCheck, GraduationCap, Heart } from 'lucide-react';
+import { ShieldCheck, Heart } from 'lucide-react';
+import logoImg from '../../assets/logo.png';
 
 export const Footer: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
   return (
@@ -9,9 +10,7 @@ export const Footer: React.FC<{ onNavigate: (page: string) => void }> = ({ onNav
           {/* Brand Col */}
           <div className="space-y-4 md:col-span-1">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-cyan-500 flex items-center justify-center text-white shadow-2xs">
-                <GraduationCap className="w-4 h-4" />
-              </div>
+              <img src={logoImg} alt="PlaceWell Logo" className="w-8 h-8 object-contain" />
               <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">
                 Place<span className="text-brand-600 dark:text-brand-400">Well</span>
               </span>

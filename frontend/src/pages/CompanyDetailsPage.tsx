@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePlaceWell } from '../context/PlaceWellContext';
 import { RoleCard } from '../components/ui/Cards';
 import { SkillPill } from '../components/ui/Badges';
+import { getCompanyRoles, ApiRoleSummary } from '../services/companyApi';
 import {
   Building2,
   ExternalLink,
@@ -17,13 +18,40 @@ export const CompanyDetailsPage: React.FC<{
   companyId: number;
   onNavigate: (page: string, params?: any) => void;
 }> = ({ companyId, onNavigate }) => {
-  const { getCompany, getCompanySkills, getCompanyRoles, db } = usePlaceWell();
+  const { getCompany, getCompanySkills, getCompanyRoles: getContextRoles, db } = usePlaceWell();
 
   const [roleSearch, setRoleSearch] = useState('');
+  const [dbRoles, setDbRoles] = useState<ApiRoleSummary[] | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    getCompanyRoles(companyId)
+      .then((res) => {
+        if (isMounted && res && Array.isArray(res.roles)) {
+          setDbRoles(res.roles);
+        }
+      })
+      .catch((err) => {
+        console.warn('Live company roles API connection notice:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [companyId]);
 
   const company = getCompany(companyId) || db.companies[0];
   const companySkills = getCompanySkills(company.company_id);
-  const roles = getCompanyRoles(company.company_id);
+
+  const roles = dbRoles
+    ? dbRoles.map((r) => ({
+        role_title: r.role_title,
+        experience_count: r.experience_count,
+        avg_difficulty: r.avg_difficulty || 3,
+        types: (r.types || ['placement']).map((t) =>
+          t.toLowerCase() === 'internship' ? ('internship' as const) : ('placement' as const)
+        ),
+      }))
+    : getContextRoles(company.company_id);
 
   const coreStackSkills = companySkills.filter((cs) => cs.usage_type === 'core_stack');
   const frequentTopics = companySkills.filter((cs) => cs.usage_type === 'frequent_interview_topic');

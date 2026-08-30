@@ -367,7 +367,7 @@ export const SubmitExperiencePage: React.FC<{
     setCurrentStep(1);
   }, [editExperienceId, db]);
 
-  const handleFinalSubmit = (status: ExperienceStatus) => {
+  const handleFinalSubmit = async (status: ExperienceStatus) => {
     const payload = {
       experience: {
         company_id: Number(companyId),
@@ -406,13 +406,13 @@ export const SubmitExperiencePage: React.FC<{
     };
 
     if (editExperienceId) {
-      updateExperience(editExperienceId, payload);
+      await updateExperience(editExperienceId, payload);
       setCreatedExpId(editExperienceId);
       setIsSubmitted(true);
       return;
     }
 
-    const expId = submitExperience(payload);
+    const expId = await submitExperience(payload);
     setCreatedExpId(expId);
     setIsSubmitted(true);
   };
