@@ -82,3 +82,57 @@ export const getAllQuestions = async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch questions' });
   }
 };
+
+// GET /api/v1/resources
+export const getAllResources = async (req, res) => {
+  try {
+    const rawResources = await prisma.resources.findMany({
+      include: {
+        skill_resources: true,
+      },
+      orderBy: {
+        resource_id: 'asc',
+      },
+    });
+
+    const resources = rawResources.map((r) => ({
+      resource_id: Number(r.resource_id),
+      experience_id: r.experience_id ? Number(r.experience_id) : undefined,
+      title: r.title,
+      content: r.content,
+      url: r.content.startsWith('http') ? r.content : '',
+      created_at: r.created_at ? r.created_at.toISOString() : new Date().toISOString(),
+      skill_resources: r.skill_resources.map((sr) => ({
+        skill_id: Number(sr.skill_id),
+        resource_id: Number(sr.resource_id),
+      })),
+    }));
+
+    return res.status(200).json(resources);
+  } catch (err) {
+    console.error('Error in getAllResources controller:', err);
+    return res.status(500).json({ error: 'Failed to fetch resources' });
+  }
+};
+
+// GET /api/v1/user-skills
+export const getAllUserSkills = async (req, res) => {
+  try {
+    const rawUserSkills = await prisma.user_skills.findMany({
+      orderBy: {
+        user_id: 'asc',
+      },
+    });
+
+    const userSkills = rawUserSkills.map((us) => ({
+      user_id: Number(us.user_id),
+      skill_id: Number(us.skill_id),
+      proficiency_level: us.proficiency_level || 'intermediate',
+    }));
+
+    return res.status(200).json(userSkills);
+  } catch (err) {
+    console.error('Error in getAllUserSkills controller:', err);
+    return res.status(500).json({ error: 'Failed to fetch user skills' });
+  }
+};

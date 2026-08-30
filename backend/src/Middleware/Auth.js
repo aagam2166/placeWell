@@ -11,6 +11,8 @@ const authenticateUser = async (req, res, next) => {
       req.originalUrl.startsWith('/api/v1/topics') ||
       req.originalUrl.startsWith('/api/v1/skills') ||
       req.originalUrl.startsWith('/api/v1/questions') ||
+      req.originalUrl.startsWith('/api/v1/resources') ||
+      req.originalUrl.startsWith('/api/v1/user-skills') ||
       req.originalUrl.startsWith('/api/companies')
     ) && req.method === 'GET';
 
