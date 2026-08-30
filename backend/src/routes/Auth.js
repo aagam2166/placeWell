@@ -5,17 +5,24 @@ import * as authController from '../controllers/AuthController.js';
 const router = express.Router();
 
 // Configure and initialize Auth0 middleware
+const isProduction = process.env.NODE_ENV === 'production';
+
 const authMiddleware = auth({
   authRequired: false,
   auth0Logout: true,
-  secret: process.env.SECRET,
-  baseURL: process.env.BASE_URL,
-  clientID: process.env.CLIENT_ID,
-  issuerBaseURL: process.env.ISSUER_BASE_URL,
+  secret: process.env.SECRET || process.env.AUTH0_SECRET,
+  baseURL: process.env.BASE_URL || process.env.AUTH0_BASE_URL,
+  clientID: process.env.CLIENT_ID || process.env.AUTH0_CLIENT_ID,
+  issuerBaseURL: process.env.ISSUER_BASE_URL || process.env.AUTH0_ISSUER_BASE_URL,
   routes: {
     // After Auth0 logout, redirect back to backend root /
-    // The backend root then bounces unauthenticated users to the frontend
     postLogoutRedirect: '/',
+  },
+  session: {
+    cookie: {
+      sameSite: isProduction ? 'None' : 'Lax',
+      secure: isProduction,
+    },
   },
 });
 
