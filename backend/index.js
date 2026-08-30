@@ -14,14 +14,25 @@ BigInt.prototype.toJSON = function () {
 };
 
 // Middlewares
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-user-id');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 app.use(authMiddleware);
 app.use(express.json());
 
 // Routes
 app.use('/', authRouter);
-app.use('/', userRouter);
+app.use('/api', userRouter);
 app.use('/api/v1/experiences', experienceRoutes);
 app.use('/companies', companyRouter);
+app.use('/api/companies', companyRouter);
+
 
 // Error Handling
 app.use(errorHandler);

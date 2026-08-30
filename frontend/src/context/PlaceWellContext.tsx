@@ -19,6 +19,8 @@ import {
   ExperienceResult,
 } from '../types/database';
 import { initialDatabase } from '../data/initialData';
+import * as companyApi from '../services/companyApi';
+
 
 interface RoleSummary {
   role_title: string;
@@ -156,7 +158,15 @@ interface PlaceWellContextType {
     resources: { title: string; url: string; skill_id?: number }[];
   }) => number; // returns experience_id
   resetDatabase: () => void;
+  // Company Backend API actions
+  fetchBackendCompanies: () => Promise<void>;
+  createCompanyApi: (data: { name: string; industry?: string; website?: string; logo_url?: string }) => Promise<Company>;
+  addSkillToCompanyApi: (
+    companyId: number,
+    skillData: { skill_id?: number; skill_name?: string; usage_type?: 'core_stack' | 'frequent_interview_topic' }
+  ) => Promise<any>;
 }
+
 
 const PlaceWellContext = createContext<PlaceWellContextType | undefined>(undefined);
 
@@ -208,11 +218,115 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   }, [currentUserId]);
 
+  const fetchBackendCompanies = async () => {
+    try {
+      const apiCompanies = await companyApi.getCompanies();
+      if (Array.isArray(apiCompanies) && apiCompanies.length > 0) {
+        setDb((prev) => {
+          const updatedCompanySkills = [...prev.company_skills];
+
+          const formattedCompanies: Company[] = apiCompanies.map((ac) => {
+            if (ac.skills && Array.isArray(ac.skills)) {
+              ac.skills.forEach((sk) => {
+                const exists = updatedCompanySkills.some(
+                  (cs) => cs.company_id === ac.company_id && cs.skill_id === sk.skill_id
+                );
+                if (!exists) {
+                  updatedCompanySkills.push({
+                    company_id: ac.company_id,
+                    skill_id: sk.skill_id,
+                    usage_type: (sk.usage_type as any) || 'frequent_interview_topic',
+                  });
+                }
+              });
+            }
+            return {
+              company_id: ac.company_id,
+              name: ac.name,
+              industry: ac.industry || 'Technology',
+              website: ac.website || '',
+              logo_url: ac.logo_url || '',
+            };
+          });
+
+          return {
+            ...prev,
+            companies: formattedCompanies,
+            company_skills: updatedCompanySkills,
+          };
+        });
+      }
+    } catch (err) {
+      console.warn('Backend connection notice (using local fallback state):', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchBackendCompanies();
+  }, []);
+
+  const createCompanyApi = async (data: { name: string; industry?: string; website?: string; logo_url?: string }): Promise<Company> => {
+    try {
+      const created = await companyApi.createCompany(data, currentUserId || 1);
+      const newCompany: Company = {
+        company_id: created.company_id,
+        name: created.name,
+        industry: created.industry || 'Technology',
+        website: created.website || '',
+        logo_url: created.logo_url || '',
+      };
+      setDb((prev) => ({
+        ...prev,
+        companies: [...prev.companies.filter((c) => c.company_id !== newCompany.company_id), newCompany],
+      }));
+      return newCompany;
+    } catch (err) {
+      console.error('API creation failed, executing local fallback:', err);
+      const newId = Math.max(...db.companies.map((c) => c.company_id), 0) + 1;
+      const newComp: Company = {
+        company_id: newId,
+        name: data.name,
+        industry: data.industry || 'Technology',
+        website: data.website || '',
+        logo_url: data.logo_url || '',
+      };
+      setDb((prev) => ({ ...prev, companies: [...prev.companies, newComp] }));
+      return newComp;
+    }
+  };
+
+  const addSkillToCompanyApi = async (
+    companyId: number,
+    skillData: { skill_id?: number; skill_name?: string; usage_type?: 'core_stack' | 'frequent_interview_topic' }
+  ) => {
+    try {
+      const res = await companyApi.addSkillToCompany(companyId, skillData, currentUserId || 1);
+      const skillId = res?.skill_id || skillData.skill_id || 1;
+      setDb((prev) => {
+        const exists = prev.company_skills.some((cs) => cs.company_id === companyId && cs.skill_id === skillId);
+        if (!exists) {
+          return {
+            ...prev,
+            company_skills: [
+              ...prev.company_skills,
+              { company_id: companyId, skill_id: skillId, usage_type: skillData.usage_type || 'frequent_interview_topic' },
+            ],
+          };
+        }
+        return prev;
+      });
+      return res;
+    } catch (err) {
+      console.error('Failed to add skill via API:', err);
+    }
+  };
+
   const currentUser = db.users.find((u) => u.user_id === currentUserId) || null;
 
   const setCurrentUser = (user: User | null) => {
     setCurrentUserId(user ? user.user_id : null);
   };
+
 
   const signIn = (email: string, password_hash_or_pass: string): boolean => {
     const user = db.users.find(
@@ -970,6 +1084,9 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
         updateExperience,
         submitExperience,
         resetDatabase,
+        fetchBackendCompanies,
+        createCompanyApi,
+        addSkillToCompanyApi,
       }}
     >
       {children}

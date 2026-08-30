@@ -86,13 +86,10 @@ export const CompaniesPage: React.FC<{ onNavigate: (page: string, params?: any) 
             />
           </div>
         </div>
-
       </div>
 
       {/* 2. COMPANY TILES GRID */}
       <div className="space-y-4">
-        
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCompanies.map((company) => {
             const exps = db.interview_experiences.filter((e) => e.company_id === company.company_id);

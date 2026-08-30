@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePlaceWell } from '../context/PlaceWellContext';
 import { OutcomeDonutChart, DifficultyHistogram, RoundFrequencyChart, TopicFrequencyBar } from '../components/ui/Charts';
 import { QuestionCard, AnonymousContributorCard } from '../components/ui/Cards';
@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   ChevronLeft
 } from 'lucide-react';
+import { getRoleAnalytics } from '../services/companyApi';
 
 export const RoleDetailsPage: React.FC<{
   companyId: number;
@@ -23,8 +24,25 @@ export const RoleDetailsPage: React.FC<{
   const { getRoleAggregatedInsights } = usePlaceWell();
 
   const [selectedTopicFilter, setSelectedTopicFilter] = useState<string | null>(null);
+  const [apiInsights, setApiInsights] = useState<any>(null);
 
-  const insights = getRoleAggregatedInsights(companyId, roleTitle);
+  useEffect(() => {
+    let isMounted = true;
+    getRoleAnalytics(companyId, roleTitle)
+      .then((data) => {
+        if (isMounted && data) {
+          setApiInsights(data);
+        }
+      })
+      .catch((err) => {
+        console.warn('Live role analytics API connection note (using fallback):', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [companyId, roleTitle]);
+
+  const insights = apiInsights || getRoleAggregatedInsights(companyId, roleTitle);
 
   if (!insights) {
     return (
@@ -57,7 +75,7 @@ export const RoleDetailsPage: React.FC<{
 
   // Filtered FAQ
   const filteredQuestions = selectedTopicFilter
-    ? frequently_asked_questions.filter((q) => q.topic.topic_name === selectedTopicFilter)
+    ? frequently_asked_questions.filter((q: any) => q.topic?.topic_name === selectedTopicFilter)
     : frequently_asked_questions;
 
   return (
@@ -123,7 +141,7 @@ export const RoleDetailsPage: React.FC<{
                 <span className="text-slate-300 dark:text-slate-700">•</span>
 
                 <div className="flex items-center gap-1">
-                  {types.map((t) => (
+                  {types.map((t: string) => (
                     <span
                       key={t}
                       className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
@@ -136,96 +154,133 @@ export const RoleDetailsPage: React.FC<{
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* 2. INTERVIEW OVERVIEW: VISUAL CHARTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Selection Outcome Donut */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 space-y-4">
+      {/* 2. THREE-PANEL GRAPHICAL ANALYTICS SECTION */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Panel 1: Outcome Distribution */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 flex flex-col justify-between space-y-4">
           <div>
-            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-              <Award className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-              <span>Selection Outcome Distribution</span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Aggregated across all reported candidates.
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <Award className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                Outcome Ratio
+              </h3>
+              <span className="text-[11px] font-bold text-slate-400">Selected vs Rejected</span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Percentage of candidate submissions that received an offer for {roleTitle}.
             </p>
           </div>
 
-          <OutcomeDonutChart
-            selected={outcomes.selected}
-            rejected={outcomes.rejected}
-            total={total_experiences}
-          />
+          <div className="py-2">
+            <OutcomeDonutChart
+              selected={outcomes.selected}
+              rejected={outcomes.rejected}
+              total={total_experiences}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-center pt-2 border-t border-slate-100 dark:border-slate-800/80">
+            <div className="bg-emerald-50/50 dark:bg-emerald-950/30 p-2 rounded-xl border border-emerald-100 dark:border-emerald-900/40">
+              <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase">Selected</p>
+              <p className="text-lg font-extrabold text-emerald-800 dark:text-emerald-200">{outcomes.selected_pct}%</p>
+            </div>
+            <div className="bg-rose-50/50 dark:bg-rose-950/30 p-2 rounded-xl border border-rose-100 dark:border-rose-900/40">
+              <p className="text-[10px] font-bold text-rose-700 dark:text-rose-300 uppercase">Rejected</p>
+              <p className="text-lg font-extrabold text-rose-800 dark:text-rose-200">{outcomes.rejected_pct}%</p>
+            </div>
+          </div>
         </div>
 
-        {/* Difficulty Distribution Histogram */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 space-y-4">
+        {/* Panel 2: Perceived Interview Difficulty */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 flex flex-col justify-between space-y-4">
           <div>
-            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-              <span>Reported Difficulty Ratings</span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Breakdown of student ratings (1★ Easy to 5★ Very Hard).
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                Difficulty Rating
+              </h3>
+              <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800">
+                <span className="text-xs font-extrabold text-amber-700 dark:text-amber-300">{avg_difficulty}/5</span>
+                <DifficultyStars rating={avg_difficulty} />
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Histogram breakdown of candidate ratings from 1 (Very Easy) to 5 (Hard).
             </p>
           </div>
 
-          <DifficultyHistogram
-            distribution={difficulty_distribution}
-            total={total_experiences}
-          />
+          <div className="py-2">
+            <DifficultyHistogram distribution={difficulty_distribution} total={total_experiences} />
+          </div>
+
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
+            <span className="font-bold text-slate-800 dark:text-white">Rating Insight: </span>
+            {avg_difficulty >= 4
+              ? 'High bar! Expect hard algorithmic & system design rounds.'
+              : 'Moderate difficulty level focused on core engineering fundamentals.'}
+          </div>
         </div>
 
-        {/* Round Structure Frequency */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 space-y-4">
+        {/* Panel 3: Round Structure Frequency */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 flex flex-col justify-between space-y-4">
           <div>
-            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-              <Layers className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-              <span>Round Structure Breakdown</span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Relative occurrence of OA, Tech, System Design, HR.
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                Round Structure Breakdown
+              </h3>
+              <span className="text-[11px] font-bold text-slate-400">Interview Pipeline</span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Distribution of rounds reported across candidates for {roleTitle}.
             </p>
           </div>
 
-          <RoundFrequencyChart roundStructure={round_structure} />
+          <div className="py-2">
+            <RoundFrequencyChart roundStructure={round_structure} />
+          </div>
+
+          <div className="p-3 bg-purple-50/50 dark:bg-purple-950/40 rounded-xl border border-purple-100 dark:border-purple-900/40 text-xs text-purple-900 dark:text-purple-200">
+            <span className="font-bold">Most Common Round: </span>
+            {keyInsights?.most_common_round || 'Technical Round'}
+          </div>
         </div>
       </div>
 
-      {/* 3. FREQUENTLY DISCUSSED TOPICS (INTERACTIVE) */}
+      {/* 3. TOP INTERVIEW TOPICS / FREQUENCY BARS */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 sm:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <Layers className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-              <span>Frequently Tested Interview Topics</span>
+              <TrendingUp className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+              <span>Top Tested Topics ({top_topics.length})</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Aggregated from candidate rounds and question logs for {roleTitle}. Click a topic to filter questions below.
+              Click any topic bar below to filter the Question Bank specifically for that topic.
             </p>
           </div>
 
           {selectedTopicFilter && (
             <button
               onClick={() => setSelectedTopicFilter(null)}
-              className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/70 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800"
+              className="self-start sm:self-auto text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline bg-brand-50 dark:bg-brand-950/60 px-3 py-1.5 rounded-xl border border-brand-200 dark:border-brand-800"
             >
-              <span>Clear Filter: {selectedTopicFilter}</span>
+              Clear Filter ({selectedTopicFilter})
             </button>
           )}
         </div>
 
         <TopicFrequencyBar
           topTopics={top_topics}
-          onSelectTopic={(t) => setSelectedTopicFilter(t.topic_name)}
+          onSelectTopic={(t: any) => setSelectedTopicFilter(t.topic?.topic_name || t.topic_name)}
         />
       </div>
 
-      {/* 4. FREQUENTLY ASKED QUESTIONS */}
+      {/* 4. QUESTION BANK (FAQS FOR ROLE) */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-card dark:shadow-dark-card p-6 sm:p-8 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
               <HelpCircle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -243,7 +298,7 @@ export const RoleDetailsPage: React.FC<{
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredQuestions.map(({ question, topic, round_type }) => (
+            {filteredQuestions.map(({ question, topic, round_type }: any) => (
               <QuestionCard
                 key={question.question_id}
                 question={question}
@@ -275,7 +330,7 @@ export const RoleDetailsPage: React.FC<{
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {contributors.map((contributor) => (
+          {contributors.map((contributor: any) => (
             <AnonymousContributorCard
               key={contributor.experience_id}
               contributor={contributor}
