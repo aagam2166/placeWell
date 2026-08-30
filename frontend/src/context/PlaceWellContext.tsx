@@ -23,6 +23,8 @@ import {
 import { initialDatabase } from '../data/initialData';
 import * as companyApi from '../services/companyApi';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 
 interface RoleSummary {
   role_title: string;
@@ -297,7 +299,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const fetchBackendExperiences = async () => {
     try {
-      const response = await fetch('/api/v1/experiences', { credentials: 'include' });
+      const response = await fetch(`${API_BASE}/api/v1/experiences`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -397,7 +399,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const fetchBackendTopics = async () => {
     try {
-      const response = await fetch('/api/v1/topics', { credentials: 'include' });
+      const response = await fetch(`${API_BASE}/api/v1/topics`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -424,7 +426,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const fetchBackendSkills = async () => {
     try {
-      const response = await fetch('/api/v1/skills', { credentials: 'include' });
+      const response = await fetch(`${API_BASE}/api/v1/skills`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -448,7 +450,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const fetchBackendQuestions = async () => {
     try {
-      const response = await fetch('/api/v1/questions', { credentials: 'include' });
+      const response = await fetch(`${API_BASE}/api/v1/questions`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -484,7 +486,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const fetchBackendResources = async () => {
     try {
-      const response = await fetch('/api/v1/resources', { credentials: 'include' });
+      const response = await fetch(`${API_BASE}/api/v1/resources`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -527,7 +529,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const fetchBackendUserSkills = async () => {
     try {
-      const response = await fetch('/api/v1/user-skills', { credentials: 'include' });
+      const response = await fetch(`${API_BASE}/api/v1/user-skills`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
