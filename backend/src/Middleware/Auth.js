@@ -6,9 +6,19 @@ const authenticateUser = async (req, res, next) => {
     const xUserId = req.headers['x-user-id'];
     const auth0Id = req.auth?.payload?.sub || req.oidc?.user?.sub || xUserId || (authHeader ? authHeader.replace('Bearer ', '').trim() : null);
 
-    const isPublicExperienceGet = req.originalUrl.startsWith('/api/v1/experiences') && req.method === 'GET';
+    const isPublicGet = (
+      req.originalUrl.startsWith('/api/v1/experiences') ||
+      req.originalUrl.startsWith('/api/v1/topics') ||
+      req.originalUrl.startsWith('/api/v1/skills') ||
+      req.originalUrl.startsWith('/api/v1/questions') ||
+      req.originalUrl.startsWith('/api/companies')
+    ) && req.method === 'GET';
 
     if (!auth0Id) {
+      if (isPublicGet) {
+        req.user = null;
+        return next();
+      }
       return res.status(401).json({ error: "Unauthorized: Authorization token or header is required" });
     }
 

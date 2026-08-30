@@ -81,15 +81,37 @@ export const getExperiences = async (req, res) => {
             college: true,
           },
         },
+        rounds: {
+          orderBy: {
+            round_number: 'asc',
+          },
+          include: {
+            round_topics: {
+              include: {
+                topics: true,
+              },
+            },
+            questions: {
+              include: {
+                question_topics: {
+                  include: {
+                    topics: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        resources: true,
       },
       orderBy: {
         created_at: 'desc',
       },
     });
 
-    // Sanitize user information for anonymous submissions
+    // Sanitize user information for anonymous submissions & format rounds/questions
     const sanitizedExperiences = experiences.map((exp) => {
-      const formatted = { ...exp };
+      const formatted = formatExperienceResponse(exp);
       if (exp.is_anonymous_public) {
         formatted.users = { name: 'Anonymous User', college: null };
       }
