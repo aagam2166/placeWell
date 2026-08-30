@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "dotenv": "^17.4.2",
+    "escape-html": "^1.0.3",
+    "express": "^5.2.1",
+    "express-openid-connect": "^2.20.2",
+    "pg": "^8.23.0",
+    "prisma": "^7.10.0"
+  }
+}
