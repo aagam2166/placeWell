@@ -4,7 +4,12 @@ const authenticateUser = async (req, res, next) => {
   try {
     const auth0Id = req.auth?.payload?.sub || req.oidc?.user?.sub;
 
+    const isPublicExperienceGet = req.originalUrl.startsWith('/api/v1/experiences') && req.method === 'GET';
+
     if (!auth0Id) {
+      if (isPublicExperienceGet) {
+        return next();
+      }
       return res.status(401).json({ error: "Unauthorized: No Auth0 ID found" });
     }
 
@@ -14,6 +19,9 @@ const authenticateUser = async (req, res, next) => {
     });
 
     if (!user) {
+      if (isPublicExperienceGet) {
+        return next();
+      }
       return res.status(404).json({ error: "User not found in database" });
     }
 

@@ -19,9 +19,9 @@ app.use(express.json());
 
 // Routes
 app.use('/', authRouter);
-app.use('/', userRouter);
+app.use('/api', userRouter);
 app.use('/api/v1/experiences', experienceRoutes);
-app.use('/companies', companyRouter);
+app.use('/api/companies', companyRouter);
 
 // Error Handling
 app.use(errorHandler);
