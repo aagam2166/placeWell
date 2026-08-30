@@ -18,7 +18,6 @@ const authenticateUser = async (req, res, next) => {
     });
 
     if (!user) {
-<<<<<<< HEAD
       const provider = auth0Id.startsWith('google-oauth2|') ? 'google' : 'local';
       const email = req.oidc?.user?.email || req.auth?.payload?.email;
       const name = req.oidc?.user?.name || req.auth?.payload?.name || 'New Student';
@@ -47,12 +46,6 @@ const authenticateUser = async (req, res, next) => {
           throw upsertErr;
         }
       }
-=======
-      if (isPublicExperienceGet) {
-        return next();
-      }
-      return res.status(404).json({ error: "User not found in database" });
->>>>>>> origin/experiences_endpoints_integration
     }
 
     req.user = user;
