@@ -1,4 +1,4 @@
-import { DatabaseState } from '../types/database';
+﻿import { DatabaseState } from '../types/database';
 
 export const initialDatabase: DatabaseState = {
   users: [
@@ -184,7 +184,7 @@ export const initialDatabase: DatabaseState = {
       year: 2025,
       result: 'selected',
       overall_difficulty: 4,
-      ctc_or_stipend: '₹75,000 / month',
+      ctc_or_stipend: 'Γé╣75,000 / month',
       total_rounds: 3,
       summary_text: 'The interview focused heavily on C language internals, bitwise manipulation, RTOS concepts, and real-time ISR constraints. Interviewers were supportive but dug very deep into memory layouts, volatile keyword mechanics, and pointer arithmetic.',
       is_anonymous_public: true,
@@ -200,7 +200,7 @@ export const initialDatabase: DatabaseState = {
       year: 2025,
       result: 'selected',
       overall_difficulty: 4,
-      ctc_or_stipend: '₹75,000 / month',
+      ctc_or_stipend: 'Γé╣75,000 / month',
       total_rounds: 3,
       summary_text: 'Had an Online Assessment consisting of 30 MCQs on C/C++ & OS, followed by 2 technical rounds. They asked me to implement a circular buffer from scratch and debug a deadlock scenario in a multithreaded sensor driver.',
       is_anonymous_public: true,
@@ -216,7 +216,7 @@ export const initialDatabase: DatabaseState = {
       year: 2024,
       result: 'selected',
       overall_difficulty: 4,
-      ctc_or_stipend: '₹28 LPA',
+      ctc_or_stipend: 'Γé╣28 LPA',
       total_rounds: 4,
       summary_text: 'Qualcomm full-time SDE drives test standard DSA (Trees, Graphs) in Round 1, followed by Low-Level C++ design, Multithreading & Memory Management in Round 2, and System Architecture + Behavioral in Round 3.',
       is_anonymous_public: true,
@@ -232,7 +232,7 @@ export const initialDatabase: DatabaseState = {
       year: 2025,
       result: 'selected',
       overall_difficulty: 3,
-      ctc_or_stipend: '₹45 LPA (CTC)',
+      ctc_or_stipend: 'Γé╣45 LPA (CTC)',
       total_rounds: 4,
       summary_text: 'Microsoft placement process was very structured. OA had 3 medium problems on Codility. Three rounds of interviews: 1st DSA (DP on Trees), 2nd Low-Level Design of a Document Editor, and 3rd Director round evaluating cultural fit and high-level thinking.',
       is_anonymous_public: true,
@@ -248,7 +248,7 @@ export const initialDatabase: DatabaseState = {
       year: 2025,
       result: 'selected',
       overall_difficulty: 5,
-      ctc_or_stipend: '₹55 LPA (CTC)',
+      ctc_or_stipend: 'Γé╣55 LPA (CTC)',
       total_rounds: 4,
       summary_text: 'Classic Google interview bar. Every round had 1-2 complex algorithmic problems where time and space complexities had to be optimized to the absolute mathematical limit. Communication and edge-case handling were strictly evaluated.',
       is_anonymous_public: true,
@@ -264,7 +264,7 @@ export const initialDatabase: DatabaseState = {
       year: 2025,
       result: 'selected',
       overall_difficulty: 4,
-      ctc_or_stipend: '₹48 LPA (CTC)',
+      ctc_or_stipend: 'Γé╣48 LPA (CTC)',
       total_rounds: 4,
       summary_text: 'Uber focused intensely on clean code, edge case testing, and distributed concurrency. One round was pure Machine Coding where I had to write a working in-memory ride matching engine with driver geolocation simulation.',
       is_anonymous_public: true,
@@ -280,7 +280,7 @@ export const initialDatabase: DatabaseState = {
       year: 2025,
       result: 'rejected',
       overall_difficulty: 4,
-      ctc_or_stipend: '₹75,000 / month',
+      ctc_or_stipend: 'Γé╣75,000 / month',
       total_rounds: 3,
       summary_text: 'Cleared the OA with a strong score, but the technical round emphasized pointer-heavy C debugging and low-level memory behavior, where the final round did not meet the expected standard.',
       is_anonymous_public: false,
@@ -302,7 +302,7 @@ export const initialDatabase: DatabaseState = {
       difficulty_rating: 3,
       platform_used: 'HackerEarth',
       difficulty: 3,
-      notes: 'Time management is key. Don’t get stuck on aptitude questions; code test cases carry the highest weightage.',
+      notes: 'Time management is key. DonΓÇÖt get stuck on aptitude questions; code test cases carry the highest weightage.',
     },
     {
       round_id: 2,
@@ -566,7 +566,7 @@ export const initialDatabase: DatabaseState = {
     {
       resource_id: 2,
       experience_id: 1,
-      title: 'Bit Twiddling Hacks — Stanford Graphics',
+      title: 'Bit Twiddling Hacks ΓÇö Stanford Graphics',
       url: 'http://graphics.stanford.edu/~seander/bithacks.html',
       created_at: '2024-11-20T10:00:00Z',
     },

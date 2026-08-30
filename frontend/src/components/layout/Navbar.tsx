@@ -209,7 +209,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate }) => {
                           onClick={() => {
                             setIsUserMenuOpen(false);
                             signOut();
-                            onNavigate('landing');
                           }}
                           className="w-full px-4 py-2 text-left text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 flex items-center gap-2"
                         >

@@ -161,7 +161,6 @@ interface PlaceWellContextType {
 const PlaceWellContext = createContext<PlaceWellContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEY = 'placewell_db_state_v1';
-const CURRENT_USER_KEY = 'placewell_active_user_id';
 
 export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [db, setDb] = useState<DatabaseState>(() => {
@@ -176,17 +175,49 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     return initialDatabase;
   });
 
-  const [currentUserId, setCurrentUserId] = useState<number | null>(() => {
+  const [currentUser, setCurrentUserState] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const fetchProfile = async () => {
     try {
-      const saved = localStorage.getItem(CURRENT_USER_KEY);
-      if (saved) {
-        return Number(saved);
+      const response = await fetch('/api/profile');
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentUserState(data);
+      } else {
+        setCurrentUserState(null);
       }
     } catch (e) {
-      console.warn('Error reading active user:', e);
+      console.warn('Error fetching profile:', e);
+      setCurrentUserState(null);
+    } finally {
+      setIsLoading(false);
     }
-    return 1; // Default to Vatsal Shah
-  });
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  // Keep db.users synchronized with the loaded/updated currentUser
+  useEffect(() => {
+    if (currentUser) {
+      setDb((prev) => {
+        const exists = prev.users.some((u) => u.user_id === currentUser.user_id);
+        if (exists) {
+          return {
+            ...prev,
+            users: prev.users.map((u) => (u.user_id === currentUser.user_id ? currentUser : u)),
+          };
+        } else {
+          return {
+            ...prev,
+            users: [...prev.users, currentUser],
+          };
+        }
+      });
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     try {
@@ -196,52 +227,33 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   }, [db]);
 
-  useEffect(() => {
-    try {
-      if (currentUserId !== null) {
-        localStorage.setItem(CURRENT_USER_KEY, String(currentUserId));
-      } else {
-        localStorage.removeItem(CURRENT_USER_KEY);
-      }
-    } catch (e) {
-      console.warn('Error saving current user:', e);
-    }
-  }, [currentUserId]);
-
-  const currentUser = db.users.find((u) => u.user_id === currentUserId) || null;
-
   const setCurrentUser = (user: User | null) => {
-    setCurrentUserId(user ? user.user_id : null);
+    setCurrentUserState(user);
   };
 
   const signIn = (email: string, password_hash_or_pass: string): boolean => {
-    const user = db.users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() || u.name.toLowerCase() === email.toLowerCase()
-    );
-    if (user) {
-      setCurrentUserId(user.user_id);
-      return true;
-    }
-    return false;
+    window.location.href = '/login';
+    return true;
   };
 
   const signUp = (data: Omit<User, 'user_id' | 'created_at'>): User => {
-    const newId = Math.max(...db.users.map((u) => u.user_id), 0) + 1;
-    const newUser: User = {
-      ...data,
-      user_id: newId,
+    window.location.href = '/login';
+    return {
+      user_id: 0,
+      name: data.name,
+      email: data.email,
+      password_hash: '',
+      college: '',
+      branch: '',
+      graduation_year: 0,
+      phone: '',
       created_at: new Date().toISOString(),
     };
-    setDb((prev) => ({
-      ...prev,
-      users: [...prev.users, newUser],
-    }));
-    setCurrentUserId(newId);
-    return newUser;
   };
 
   const signOut = () => {
-    setCurrentUserId(null);
+    setCurrentUserState(null);
+    window.location.href = '/logout';
   };
 
   const getCompany = (companyId: number): Company | undefined => {
@@ -762,12 +774,26 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     addUserSkill(skillId, proficiency);
   };
 
-  const updateUserProfile = (data: Partial<Omit<User, 'user_id' | 'password_hash' | 'created_at'>>) => {
+  const updateUserProfile = async (data: Partial<Omit<User, 'user_id' | 'password_hash' | 'created_at'>>) => {
     if (!currentUser) return;
-    setDb((prev) => ({
-      ...prev,
-      users: prev.users.map((u) => (u.user_id === currentUser.user_id ? { ...u, ...data } : u)),
-    }));
+    try {
+      const response = await fetch('/api/edit-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      if (response.ok) {
+        const result = await response.json();
+        // The API returns the updated user as { user: ... }
+        setCurrentUserState(result.user);
+      } else {
+        console.error('Failed to update profile');
+      }
+    } catch (e) {
+      console.warn('Error updating profile:', e);
+    }
   };
 
   const updateExperience = (experienceId: number, payload: {
@@ -941,7 +967,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const resetDatabase = () => {
     setDb(initialDatabase);
-    setCurrentUserId(1);
+    setCurrentUserState(null);
   };
 
   return (
