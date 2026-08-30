@@ -14,14 +14,28 @@ BigInt.prototype.toJSON = function () {
 };
 
 // Middlewares
+if (process.env.NODE_ENV === 'development' || process.env.FRONTEND_URL) {
+  app.use((req, res, next) => {
+    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+}
+
 app.use(authMiddleware);
 app.use(express.json());
 
 // Routes
 app.use('/', authRouter);
-app.use('/', userRouter);
+app.use('/api', userRouter);
 app.use('/api/v1/experiences', experienceRoutes);
-app.use('/companies', companyRouter);
+app.use('/api/companies', companyRouter);
 
 // Error Handling
 app.use(errorHandler);

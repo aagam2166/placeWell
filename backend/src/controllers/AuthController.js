@@ -3,90 +3,47 @@ import escape from 'escape-html';
 
 // GET /login
 export const login = (req, res) => {
+  const returnToUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/profile` : '/profile';
   if (req.oidc.isAuthenticated()) {
     if (req.accepts('html', 'json') === 'json') {
       return res.json({ authenticated: true, user: req.oidc.user });
     }
-    return res.redirect('/profile');
+    return res.redirect(returnToUrl);
   }
 
   res.oidc.login({
-    returnTo: '/profile',
+    returnTo: returnToUrl,
   });
 };
 
 // GET /register /signup
 export const register = (req, res) => {
+  const returnToUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/profile` : '/profile';
   if (req.oidc.isAuthenticated()) {
     if (req.accepts('html', 'json') === 'json') {
       return res.json({ authenticated: true, user: req.oidc.user });
     }
-    return res.redirect('/profile');
+    return res.redirect(returnToUrl);
   }
 
   res.oidc.login({
-    returnTo: '/profile',
+    returnTo: returnToUrl,
     authorizationParams: {
       screen_hint: 'signup',
     },
   });
 };
 
-// GET /
-export const home = async (req, res) => {
-  if (!req.oidc.isAuthenticated()) {
-    return res.type('html').send(`
-      <a href="/register">Signup</a><br>
-      <a href="/login">Log in</a>
-    `);
+// GET / — acts as a post-logout and post-login landing pad
+// express-openid-connect uses returnTo for post-login, so authenticated hits here
+// only happen if the user visits localhost:3000 directly.
+export const home = (req, res) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  if (req.oidc.isAuthenticated()) {
+    // Logged in but on backend root — send to frontend profile page
+    return res.redirect(`${frontendUrl}/profile`);
   }
-
-  const auth0Id = req.oidc.user.sub;
-  let dbUser = null;
-  let dbStatusMessage = '';
-
-  try {
-    // Query database for the user using Prisma
-    dbUser = await prisma.users.findUnique({
-      where: { auth_provider_id: auth0Id },
-    });
-
-    if (!dbUser) {
-      // Determine provider dynamically based on the Auth0 sub prefix
-      const provider = auth0Id.startsWith('google-oauth2|') ? 'google' : 'local';
-
-      // Create user if not present using Prisma
-      dbUser = await prisma.users.create({
-        data: {
-          auth_provider_id: auth0Id,
-          auth_provider: provider,
-          email: req.oidc.user.email,
-          name: req.oidc.user.name,
-        },
-      });
-      dbStatusMessage = '<p style="color: green; font-weight: bold;">User record synced and created in database via Prisma!</p>';
-    } else {
-      dbStatusMessage = '<p style="color: blue;">User loaded from database via Prisma.</p>';
-    }
-  } catch (err) {
-    console.error('Prisma database integration error:', err);
-    dbStatusMessage = `<p style="color: red;">Error communicating with database via Prisma: ${escape(err.message || err)}</p>`;
-  }
-
-  res.type('html').send(`
-    <p>Logged in as ${escape(req.oidc.user.name)}</p>
-    
-    <h2>Auth0 Profile (ID Token Claims)</h2>
-    <pre>${escape(JSON.stringify(req.oidc.user, null, 2))}</pre>
-
-    <h2>Database Status (Prisma)</h2>
-    ${dbStatusMessage}
-    ${dbUser ? `
-      <h3>User Record from Database</h3>
-      <pre>${escape(JSON.stringify(dbUser, null, 2))}</pre>
-    ` : ''}
-
-    <br>
-    <a href="/logout">Log out</a>
-  `);
+  // Not logged in (e.g. just logged out) — send to frontend homepage
+  return res.redirect(frontendUrl);
 };
+

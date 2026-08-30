@@ -9,12 +9,39 @@ const authenticateUser = async (req, res, next) => {
     }
 
     // Fetch user from database using Prisma
-    const user = await prisma.users.findUnique({
+    let user = await prisma.users.findUnique({
       where: { auth_provider_id: auth0Id }
     });
 
     if (!user) {
-      return res.status(404).json({ error: "User not found in database" });
+      const provider = auth0Id.startsWith('google-oauth2|') ? 'google' : 'local';
+      const email = req.oidc?.user?.email || req.auth?.payload?.email;
+      const name = req.oidc?.user?.name || req.auth?.payload?.name || 'New Student';
+
+      try {
+        // upsert: create the user if not found by auth_provider_id, else no-op
+        user = await prisma.users.upsert({
+          where: { auth_provider_id: auth0Id },
+          update: {},
+          create: {
+            auth_provider_id: auth0Id,
+            auth_provider: provider,
+            email: email || `${auth0Id}@placewell.local`,
+            name,
+          },
+        });
+      } catch (upsertErr) {
+        // Email unique constraint hit — an account with this email already exists
+        // under a different provider. Link auth_provider_id to that existing record.
+        if (upsertErr.code === 'P2002' && email) {
+          user = await prisma.users.update({
+            where: { email },
+            data: { auth_provider_id: auth0Id, auth_provider: provider },
+          });
+        } else {
+          throw upsertErr;
+        }
+      }
     }
 
     req.user = user;
