@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePlaceWell } from '../context/PlaceWellContext';
 import { ProficiencyLevel } from '../types/database';
 import { StatusBadge } from '../components/ui/Badges';
@@ -50,6 +50,34 @@ export const ProfilePage: React.FC<{ onNavigate: (page: string, params?: any) =>
   const [editCollege, setEditCollege] = useState(currentUser?.college || '');
   const [editBranch, setEditBranch] = useState(currentUser?.branch || '');
   const [editGradYear, setEditGradYear] = useState(currentUser?.graduation_year || 2026);
+  const [editPhone, setEditPhone] = useState(currentUser?.phone || '');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      setEditName(currentUser.name || '');
+      setEditCollege(currentUser.college || '');
+      setEditBranch(currentUser.branch || '');
+      setEditGradYear(currentUser.graduation_year || 2026);
+      setEditPhone(currentUser.phone || '');
+    }
+  }, [currentUser]);
+
+  // Live completion based on what's currently typed in the edit form
+  const editFields = [
+    { label: 'Full Name',        value: editName.trim() },
+    { label: 'College',          value: editCollege.trim() },
+    { label: 'Branch',           value: editBranch.trim() },
+    { label: 'Graduation Year',  value: editGradYear ? String(editGradYear) : '' },
+    { label: 'Phone',            value: editPhone.trim() },
+    { label: 'Email',            value: currentUser?.email?.trim() || '' },
+  ];
+  const editCompletion = Math.round(
+    (editFields.filter((f) => Boolean(f.value)).length / editFields.length) * 100
+  );
+  const missingFields = editFields.filter((f) => !f.value).map((f) => f.label);
+  const displayCompletion = isEditingProfile ? editCompletion : profileCompletion;
+  const allRequiredFilled = missingFields.length === 0;
 
   // New Skill Modal
   const [isAddSkillOpen, setIsAddSkillOpen] = useState(false);
@@ -73,16 +101,20 @@ export const ProfilePage: React.FC<{ onNavigate: (page: string, params?: any) =>
   const userSkills = getUserSkills(currentUser.user_id);
   const userExperiences = getUserExperiences(currentUser.user_id);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserProfile({
+    setIsSaving(true);
+    await updateUserProfile({
       name: editName,
       college: editCollege,
       branch: editBranch,
       graduation_year: Number(editGradYear),
+      phone: editPhone,
     });
+    setIsSaving(false);
     setIsEditingProfile(false);
   };
+
 
   const handleAddSkill = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,11 +152,11 @@ export const ProfilePage: React.FC<{ onNavigate: (page: string, params?: any) =>
                 <div
                   className="absolute inset-0 rounded-full"
                   style={{
-                    background: `conic-gradient(#3b82f6 ${profileCompletion * 3.6}deg, rgba(148,163,184,0.24) 0deg)`,
+                    background: `conic-gradient(#3b82f6 ${displayCompletion * 3.6}deg, rgba(148,163,184,0.24) 0deg)`,
                   }}
                 />
                 <div className="absolute inset-[8px] rounded-full bg-white dark:bg-slate-900 flex items-center justify-center text-[10px] font-black text-slate-800 dark:text-white">
-                  {profileCompletion}%
+                  {displayCompletion}%
                 </div>
               </div>
 
@@ -137,19 +169,23 @@ export const ProfilePage: React.FC<{ onNavigate: (page: string, params?: any) =>
             </div>
           </div>
 
-          {profileCompletion < 100 && (
+          {(profileCompletion < 100 || (isEditingProfile && !allRequiredFilled)) && (
             <div className="rounded-2xl border border-amber-200 dark:border-amber-700 bg-amber-50/80 dark:bg-amber-950/40 px-4 py-3 text-xs text-amber-800 dark:text-amber-200 flex items-center justify-between gap-3">
               <span>
-                Add the remaining profile details to unlock a complete student profile after Google sign-up.
+                {missingFields.length > 0
+                  ? <>Missing: <strong>{missingFields.join(', ')}</strong></>
+                  : 'Add the remaining profile details to unlock a complete student profile.'}
               </span>
-              <button
-                type="button"
-                onClick={() => setIsEditingProfile(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                Complete profile
-              </button>
+              {!isEditingProfile && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProfile(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  Complete profile
+                </button>
+              )}
             </div>
           )}
 
@@ -207,20 +243,53 @@ export const ProfilePage: React.FC<{ onNavigate: (page: string, params?: any) =>
                   className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-500 outline-none"
                 />
               </div>
-              <div className="sm:col-span-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditingProfile(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-brand-600 text-white font-bold text-xs shadow-md shadow-brand-600/20 hover:bg-brand-700"
-                >
-                  Save Changes
-                </button>
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Phone</label>
+                <input
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="+91 XXXXX XXXXX"
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-500 outline-none"
+                />
+              </div>
+              <div className="sm:col-span-2 flex justify-between items-center gap-2">
+                {/* Live completion feedback */}
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{
+                        width: `${editCompletion}%`,
+                        background: editCompletion === 100 ? '#22c55e' : '#f59e0b',
+                      }}
+                    />
+                  </div>
+                  <span className={editCompletion === 100 ? 'text-emerald-600 font-bold' : 'text-amber-600 font-bold'}>
+                    {editCompletion}% complete
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!allRequiredFilled || isSaving}
+                    className={`px-5 py-2 rounded-xl font-bold text-xs shadow-md transition-all ${
+                      allRequiredFilled && !isSaving
+                        ? 'bg-brand-600 text-white shadow-brand-600/20 hover:bg-brand-700'
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {isSaving ? 'Saving…' : allRequiredFilled ? 'Save Changes' : `Fill ${missingFields.length} more field${missingFields.length > 1 ? 's' : ''}`}
+                  </button>
+                </div>
               </div>
             </form>
           )}

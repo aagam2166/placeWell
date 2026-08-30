@@ -180,7 +180,9 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/profile');
+      const response = await fetch('/api/profile', {
+        credentials: 'include',  // Send session cookie through the Vite proxy
+      });
       if (response.ok) {
         const data = await response.json();
         setCurrentUserState(data);
@@ -195,9 +197,20 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
+  // Fetch profile on mount and whenever the tab becomes visible again
+  // (covers the Auth0 redirect-back flow where the user returns to this tab)
   useEffect(() => {
     fetchProfile();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchProfile();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
+
 
   // Keep db.users synchronized with the loaded/updated currentUser
   useEffect(() => {
@@ -782,6 +795,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
       if (response.ok) {
@@ -789,7 +803,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
         // The API returns the updated user as { user: ... }
         setCurrentUserState(result.user);
       } else {
-        console.error('Failed to update profile');
+        console.error('Failed to update profile:', response.statusText);
       }
     } catch (e) {
       console.warn('Error updating profile:', e);

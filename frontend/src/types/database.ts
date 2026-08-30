@@ -4,12 +4,15 @@ export interface User {
   user_id: number;
   name: string;
   email: string;
-  password_hash: string;
-  college: string;
-  branch: string;
-  graduation_year: number;
-  phone: string;
-  created_at: string; // ISO datetime
+  password_hash?: string;        // Not returned by backend (OAuth users have none)
+  college: string | null;
+  branch: string | null;
+  graduation_year: number | null;
+  phone: string | null;
+  created_at: string;            // ISO datetime
+  auth_provider?: string;
+  auth_provider_id?: string;
+  skills?: { skill_id: number; skill_name: string; proficiency_level: string }[];
 }
 
 export interface Company {
