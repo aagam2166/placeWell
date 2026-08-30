@@ -59,8 +59,8 @@ model questions {
   question_type   String?
   difficulty      Int?
   reference_link  String?
-  rounds          rounds            @relation(fields: [round_id], references: [round_id], onDelete: Cascade, onUpdate: NoAction)
   question_topics question_topics[]
+  rounds          rounds            @relation(fields: [round_id], references: [round_id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -68,8 +68,8 @@ model resources {
   resource_id           BigInt                 @id @default(autoincrement())
   experience_id         BigInt?
   title                 String
-  content               String
   created_at            DateTime?              @default(now()) @db.Timestamptz(6)
+  content               String
   interview_experiences interview_experiences? @relation(fields: [experience_id], references: [experience_id], onUpdate: NoAction)
   skill_resources       skill_resources[]
 }
@@ -87,8 +87,8 @@ model rounds {
   difficulty            Int?
   notes                 String?
   questions             questions[]
-  interview_experiences interview_experiences @relation(fields: [experience_id], references: [experience_id], onDelete: Cascade, onUpdate: NoAction)
   round_topics          round_topics[]
+  interview_experiences interview_experiences @relation(fields: [experience_id], references: [experience_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([experience_id, round_number])
 }
@@ -120,8 +120,8 @@ model topics {
   topic_name      String
   parent_topic_id BigInt?
   category        String?
-  round_topics    round_topics[]
   question_topics question_topics[]
+  round_topics    round_topics[]
   topics          topics?           @relation("topicsTotopics", fields: [parent_topic_id], references: [topic_id], onDelete: Cascade, onUpdate: NoAction)
   other_topics    topics[]          @relation("topicsTotopics")
   skills          skills?           @relation(fields: [skill_id], references: [skill_id], onUpdate: NoAction)
@@ -146,20 +146,15 @@ model users {
   name                  String
   email                 String                  @unique
   password_hash         String?
-  auth_provider_id      String                  @unique
-  auth_provider         auth_provider
   college               String?
   branch                String?
   graduation_year       Int?
   phone                 String?
-  created_at            DateTime?               @db.Timestamptz(6) @default(now())
+  created_at            DateTime?               @default(now()) @db.Timestamptz(6)
+  auth_provider         auth_provider
+  auth_provider_id      String                  @unique
   interview_experiences interview_experiences[]
   user_skills           user_skills[]
-}
-
-enum auth_provider {
-  google
-  local
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -180,4 +175,9 @@ model question_topics {
   topics      topics    @relation(fields: [topic_id], references: [topic_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([question_id, topic_id])
+}
+
+enum auth_provider {
+  google
+  local
 }

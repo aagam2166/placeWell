@@ -6,6 +6,8 @@ const authenticateUser = async (req, res, next) => {
     const xUserId = req.headers['x-user-id'];
     const auth0Id = req.auth?.payload?.sub || req.oidc?.user?.sub || xUserId || (authHeader ? authHeader.replace('Bearer ', '').trim() : null);
 
+    const isPublicExperienceGet = req.originalUrl.startsWith('/api/v1/experiences') && req.method === 'GET';
+
     if (!auth0Id) {
       return res.status(401).json({ error: "Unauthorized: Authorization token or header is required" });
     }
@@ -16,6 +18,7 @@ const authenticateUser = async (req, res, next) => {
     });
 
     if (!user) {
+<<<<<<< HEAD
       const provider = auth0Id.startsWith('google-oauth2|') ? 'google' : 'local';
       const email = req.oidc?.user?.email || req.auth?.payload?.email;
       const name = req.oidc?.user?.name || req.auth?.payload?.name || 'New Student';
@@ -44,6 +47,12 @@ const authenticateUser = async (req, res, next) => {
           throw upsertErr;
         }
       }
+=======
+      if (isPublicExperienceGet) {
+        return next();
+      }
+      return res.status(404).json({ error: "User not found in database" });
+>>>>>>> origin/experiences_endpoints_integration
     }
 
     req.user = user;
