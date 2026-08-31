@@ -1378,7 +1378,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
         })),
       };
 
-      const res = await fetch('/api/v1/experiences', {
+      const res = await fetch(`${API_BASE}/api/v1/experiences`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1387,6 +1387,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
         credentials: 'include',
         body: JSON.stringify(apiBody),
       });
+
 
       if (res.ok) {
         const data = await res.json();
