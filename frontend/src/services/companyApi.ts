@@ -84,12 +84,16 @@ function getHeaders(userId?: number) {
  * 1. GET /companies - Get list of companies with optional filters
  */
 export async function getCompanies(params?: { search?: string; industry?: string; skill_id?: number }): Promise<ApiCompany[]> {
-  const url = new URL('/api/companies', window.location.origin);
-  if (params?.search) url.searchParams.append('search', params.search);
-  if (params?.industry && params.industry !== 'All') url.searchParams.append('industry', params.industry);
-  if (params?.skill_id) url.searchParams.append('skill_id', String(params.skill_id));
+  const query = new URLSearchParams();
+  if (params?.search) query.append('search', params.search);
+  if (params?.industry && params.industry !== 'All') query.append('industry', params.industry);
+  if (params?.skill_id) query.append('skill_id', String(params.skill_id));
 
-  const res = await fetch(url.toString());
+  const queryString = query.toString();
+  const url = `${API_BASE_URL}/companies${queryString ? `?${queryString}` : ''}`;
+
+
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch companies: ${res.statusText}`);
   return res.json();
 }

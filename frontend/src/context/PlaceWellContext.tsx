@@ -194,8 +194,8 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/profile', {
-        credentials: 'include',  // Send session cookie through the Vite proxy
+      const response = await fetch(`${API_BASE}/api/profile`, {
+        credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
@@ -624,12 +624,12 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
 
   const signIn = (email: string, password_hash_or_pass: string): boolean => {
-    window.location.href = '/login';
+    window.location.href = `${API_BASE}/login`;
     return true;
   };
 
   const signUp = (data: Omit<User, 'user_id' | 'created_at'>): User => {
-    window.location.href = '/login';
+    window.location.href = `${API_BASE}/login`;
     return {
       user_id: 0,
       name: data.name,
@@ -645,7 +645,7 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const signOut = () => {
     setCurrentUserState(null);
-    window.location.href = '/logout';
+    window.location.href = `${API_BASE}/logout`;
   };
 
   const getCompany = (companyId: number): Company | undefined => {
@@ -1304,12 +1304,12 @@ export const PlaceWellProvider: React.FC<{ children: ReactNode }> = ({ children 
         interview_experiences: prev.interview_experiences.map((e) =>
           e.experience_id === experienceId
             ? {
-                ...e,
-                ...payload.experience,
-                experience_id: experienceId,
-                user_id: e.user_id,
-                created_at: e.created_at,
-              }
+              ...e,
+              ...payload.experience,
+              experience_id: experienceId,
+              user_id: e.user_id,
+              created_at: e.created_at,
+            }
             : e
         ),
         rounds: [

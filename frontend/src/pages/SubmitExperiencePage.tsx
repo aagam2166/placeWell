@@ -187,66 +187,31 @@ export const SubmitExperiencePage: React.FC<{
 
   // Step 1: Basic Experience
   const [companyId, setCompanyId] = useState<number>(1);
-  const [roleTitle, setRoleTitle] = useState('Embedded Systems Intern');
+  const [roleTitle, setRoleTitle] = useState('');
   const [experienceType, setExperienceType] = useState<ExperienceType>('internship');
   const [year, setYear] = useState<number>(2025);
   const [result, setResult] = useState<ExperienceResult>('selected');
-  const [overallDifficulty, setOverallDifficulty] = useState<number>(4);
-  const [ctcOrStipend, setCtcOrStipend] = useState('₹75,000 / month');
-  const [summaryText, setSummaryText] = useState(
-    'Detailed interview drive with heavy focus on C pointers, volatile keyword, and RTOS task synchronization.'
-  );
+  const [overallDifficulty, setOverallDifficulty] = useState<number>(3);
+  const [ctcOrStipend, setCtcOrStipend] = useState('');
+  const [summaryText, setSummaryText] = useState('');
 
   // Step 2 & 3: Rounds and Questions
   const [rounds, setRounds] = useState<RoundFormState[]>([
     {
       round_number: 1,
-      round_type: 'OA',
-      duration_minutes: 90,
-      description_text: 'Online assessment with 25 technical MCQs and 2 coding tasks on bitwise operations.',
-      difficulty_rating: 3,
-      platform_used: 'HackerEarth',
-      notes: 'Ensure all hidden edge cases like negative integer inputs and overflows pass.',
-      topic_id: 5,
-      questions: [
-        {
-          question_text: 'Reverse bits of a 32-bit unsigned integer without standard library functions.',
-          question_type: 'coding',
-          topic_id: 5,
-          difficulty: 3,
-          reference_link: 'https://leetcode.com/problems/reverse-bits/',
-        },
-      ],
-    },
-    {
-      round_number: 2,
       round_type: 'Tech',
       duration_minutes: 60,
-      description_text: 'Technical interview on C memory layout, mutex vs semaphore, and implementing a thread-safe circular buffer.',
-      difficulty_rating: 4,
-      platform_used: 'Microsoft Teams',
-      notes: 'Interviewer drilled into volatile keyword and ISR context switching latency.',
-      topic_id: 8,
-      questions: [
-        {
-          question_text: 'What is priority inversion in RTOS and how does Priority Inheritance Protocol resolve it?',
-          question_type: 'theory',
-          topic_id: 8,
-          difficulty: 4,
-          reference_link: '',
-        },
-      ],
+      description_text: '',
+      difficulty_rating: 3,
+      platform_used: '',
+      notes: '',
+      topic_id: 1,
+      questions: [],
     },
   ]);
 
   // Step 4: Resources
-  const [resources, setResources] = useState<ResourceFormState[]>([
-    {
-      title: 'FreeRTOS Architecture & Kernel Concepts Guide',
-      url: 'https://www.freertos.org/Documentation/RTOS_book.html',
-      skill_id: 3,
-    },
-  ]);
+  const [resources, setResources] = useState<ResourceFormState[]>([]);
 
   // Step 5: Privacy
   const [isAnonymousPublic, setIsAnonymousPublic] = useState(true);
@@ -263,7 +228,7 @@ export const SubmitExperiencePage: React.FC<{
         duration_minutes: 60,
         description_text: '',
         difficulty_rating: 3,
-        platform_used: 'Microsoft Teams',
+        platform_used: '',
         notes: '',
         topic_id: 1,
         questions: [],

@@ -36,7 +36,7 @@ export const AuthPage: React.FC<{ onNavigate: (page: string, params?: any) => vo
   }, [typedText, isDeleting]);
 
   const handleSignIn = () => {
-    window.location.href = '/login';
+    signIn('', '');
   };
 
   return (
